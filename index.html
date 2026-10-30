@@ -879,10 +879,301 @@ document.addEventListener('DOMContentLoaded', function() {
       floaters.insertBefore(btn, floaters.firstChild);
     }
   });
-
   // Mulai pantau seluruh halaman
   observer.observe(document.body, { childList: true, subtree: true });
 });
+ <!-- =====================================================================
+     GH TOPUP - MASTER OVERRIDE SCRIPT (GABUNGAN CLOUD AI + FITUR)
+     TARUH DI PALING BAWAH FILE, TEPAT DI ATAS </body>
+====================================================================== -->
+<style>
+/* Sembunyikan tombol WA dan tombol chat lama secara paksa */
+.floaters button[onclick*="wa.me"],
+.floaters button[aria-label="Hubungi WhatsApp"] { display: none !important; visibility: hidden !important; }
+.floaters .gh-chat-fab { background: #00a0ff !important; color: #fff !important; }
+.gh-chat-fab.has-new:after { content: ""; position: absolute; top: 6px; right: 6px; width: 10px; height: 10px; border-radius: 50%; background: #ff3860; }
+#gh-chat { position: fixed; right: 14px; bottom: 92px; z-index: 100060; width: min(340px, calc(100vw - 28px)); height: min(430px, 72dvh); display: none; flex-direction: column; overflow: hidden; border-radius: 18px; border: 1px solid var(--border); background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: var(--shadow); }
+#gh-chat.open { display: flex; }
+.ghc-h { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: var(--panel2); border-bottom: 1px solid var(--border); font-size: 13px; }
+.ghc-h button { background: transparent; color: var(--text); font-size: 22px; padding: 0 6px; }
+.ghc-m { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.ghc-b { max-width: 82%; padding: 8px 12px; border-radius: 12px; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; white-space: pre-wrap; }
+.ghc-b.bot, .ghc-b.admin { align-self: flex-start; background: var(--panel2); }
+.ghc-b.admin { background: #1f9d55; color: #fff; }
+.ghc-b.buyer { align-self: flex-end; background: var(--accent); color: #08080f; }
+.ghc-in { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--border); }
+.ghc-in input { flex: 1; min-width: 0; border-radius: 20px; border: 1px solid var(--border); background: var(--panel); padding: 9px 12px; font-size: 12px; outline: none; }
+.ghc-in button { width: 38px; height: 38px; border-radius: 50%; background: #00a0ff; color: #fff; }
+.ghc-wa { text-align: center; font-size: 10px; color: var(--muted); padding: 0 0 8px; text-decoration: underline; }
+.gh-del { background: #ff2040 !important; color: #fff !important; }
+body.gfx-low .game-card { transform: none !important; }
+.skeleton { margin-bottom: 10px; }
+</style>
+
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const norm = t => { let d = String(t||'').replace(/\D/g, ''); if (d.startsWith('62')) d = '0' + d.slice(2); return d; };
+const IS_ADMIN_FLAG = 'gh_admin';
+const ADMIN_EMAILS = []; 
+
+/* Skeleton loading */
+const app = $('#app'); if (app && !app.children.length) app.innerHTML = '<div class="skeleton"></div>'.repeat(6);
+
+/* PWA Manifest */
+try { const m = { name: 'GH TopUp', short_name: 'GH TopUp', start_url: location.origin + '/', display: 'standalone', background_color: '#08080f', theme_color: '#08080f', icons: [{ src: typeof GH_LOGO !== 'undefined' ? GH_LOGO : '', sizes: '512x512', type: 'image/png' }] }; const l = document.createElement('link'); l.rel = 'manifest'; l.href = URL.createObjectURL(new Blob([JSON.stringify(m)], { type: 'application/manifest+json' })); document.head.appendChild(l); } catch(e) {}
+
+/* Auto-Graphics + 3D Tilt */
+const weak = (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 2;
+try { if (weak && !localStorage.getItem('gh_graphics_quality')) localStorage.setItem('gh_graphics_quality', 'low'); } catch(e) {}
+document.addEventListener('pointermove', e => {
+  if (weak || e.pointerType === 'touch') return;
+  const c = e.target.closest && e.target.closest('.game-card'); if (!c) return;
+  const r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+  c.style.transform = `perspective(600px) rotateX(${(-y*8).toFixed(2)}deg) rotateY(${(x*8).toFixed(2)}deg) translateY(-4px)`;
+}, { passive: true });
+document.addEventListener('pointerout', e => { const c = e.target.closest && e.target.closest('.game-card'); if (c && !c.contains(e.relatedTarget)) c.style.transform = ''; }, { passive: true });
+
+/* Checkout: Blacklist + Silent Registration */
+const _gp = window.goToPayment;
+window.goToPayment = async function(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  const wa = norm(($('#buyer-wa') || {}).value), prev = state.currentOrder && state.currentOrder.invoice;
+  if (sb && wa.length >= 9) { const b = await sb.rpc('gh_is_blocked', { p_wa: wa }); if (b.data === true) { alert('⛔ Nomor ini diblokir sementara (1 minggu) karena beberapa pesanan tidak dibayar. Hubungi admin jika ini keliru.'); return; } }
+  await _gp.call(this, e);
+  if (sb && wa.length >= 9 && state.currentOrder && state.currentOrder.invoice !== prev) { localStorage.setItem('gh_wa', wa); sb.rpc('gh_register', { p_wa: wa }); }
+};
+
+/* Invoice PNG */
+const _rp = window.renderPayment;
+window.renderPayment = function() {
+  _rp(); const p = $('#app .panel'); if (!state.currentOrder || !p) return;
+  p.insertAdjacentHTML('beforeend', '<button class="btn" style="margin-top:10px;width:100%" onclick="saveInvoicePng()">Simpan Invoice (PNG)</button>');
+};
+window.saveInvoicePng = function() {
+  const o = state.currentOrder; if (!o) return;
+  const c = document.createElement('canvas'); c.width = 640; c.height = 520; const x = c.getContext('2d');
+  x.fillStyle = '#fff'; x.fillRect(0, 0, 640, 520); x.fillStyle = '#111'; x.font = 'bold 28px sans-serif'; x.fillText('GH TOPUP - INVOICE', 30, 50); x.font = '20px sans-serif';
+  [['Invoice', o.invoice], ['Game', o.game_name], ['Produk', o.product_name], ['ID Game', o.user_game_id || '-'], ['Server', o.server || '-'], ['WhatsApp', o.wa || '-'], ['Metode', o.payment_method], ['Status', o.status], ['Total', typeof money === 'function' ? money(o.total_amount) : o.total_amount]]
+    .forEach((r, i) => { x.fillStyle = '#555'; x.fillText(r[0], 30, 100 + i * 42); x.fillStyle = '#111'; x.fillText(String(r[1]), 220, 100 + i * 42); });
+  x.fillStyle = '#777'; x.font = '14px sans-serif'; x.fillText('Dibuat: ' + (typeof formatDate === 'function' ? formatDate(o.created_at || Date.now()) : new Date().toLocaleString()), 30, 495);
+  const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = 'invoice-' + o.invoice + '.png'; a.click();
+};
+
+/* Profil Member */
+window.loadProfile = async function(e) {
+  e.preventDefault(); const wa = norm($('#profile-wa').value), b = $('#profile-result'); state.profileWa = wa; localStorage.setItem('gh_wa', wa);
+  const { data, error } = await sb.rpc('gh_profile', { p_wa: wa });
+  if (error) { b.textContent = 'Gagal memuat profil: ' + error.message; return; }
+  if (!data) { b.innerHTML = '<p class="muted">Profil belum ada. Profil dibuat otomatis saat checkout pertama.</p>'; return; }
+  const t = Number(data.total_transactions || 0), nx = t >= 50 ? null : t >= 20 ? ['Diamond', 50] : t >= 5 ? ['Gold', 20] : ['Silver', 5];
+  b.innerHTML = `<div class="glass panel" style="margin-top:15px"><h3>GH MEMBER · ${esc(data.tier)}</h3><p>Poin: <b>${Number(data.points)}</b></p><p>Transaksi sukses: <b>${t}</b></p><p class="muted small">${nx ? (nx[1] - t) + ' transaksi lagi menuju ' + nx[0] : 'Kamu sudah di tier tertinggi'}</p><button class="btn btn-primary" onclick="openSpin()">Spin Gacha</button></div>`;
+};
+
+/* Spin Gacha */
+const SEG = ['5', '10', '20', '30', '5', '5', '5', '5'];
+window.drawWheel = function() {
+  const c = $('#spin-canvas'); if (!c) return; const x = c.getContext('2d'), col = ['#a6a6b8', '#00f0ff', '#ff00e0', '#ffcc00', '#778899', '#00a0ff', '#ff2040', '#36d995'];
+  x.clearRect(0, 0, 500, 500);
+  SEG.forEach((s, i) => { const a = i * Math.PI / 4 - Math.PI / 2; x.beginPath(); x.moveTo(250, 250); x.arc(250, 250, 235, a, a + Math.PI / 4); x.closePath(); x.fillStyle = col[i]; x.fill(); x.strokeStyle = '#fff8'; x.stroke(); x.save(); x.translate(250, 250); x.rotate(a + Math.PI / 8); x.fillStyle = '#111'; x.font = 'bold 22px Poppins'; x.textAlign = 'right'; x.fillText(s + 'p', 215, 8); x.restore(); });
+  x.beginPath(); x.arc(250, 250, 38, 0, 7); x.fillStyle = '#111'; x.fill(); x.fillStyle = '#fff'; x.font = 'bold 20px Orbitron'; x.textAlign = 'center'; x.fillText('GH', 250, 257);
+};
+window.openSpin = function() {
+  $('#general-content').innerHTML = `<h2>Spin Gacha</h2><p class="muted small">1x sehari per nomor WhatsApp. Hadiah dihitung di server.</p><div class="form-row"><label>Nomor WhatsApp (pernah checkout)</label><input class="field" id="spin-wa" inputmode="tel" value="${esc(localStorage.getItem('gh_wa') || '')}"></div><div style="width:min(270px,80vw);aspect-ratio:1;margin:15px auto;position:relative"><canvas id="spin-canvas" width="500" height="500" style="width:100%;height:100%"></canvas><div style="position:absolute;top:-7px;left:calc(50% - 12px);border-left:12px solid transparent;border-right:12px solid transparent;border-top:25px solid var(--accent)"></div></div><div style="text-align:center"><button class="btn btn-primary" id="spin-btn" onclick="spinGacha()">PUTAR SEKARANG</button><p id="spin-result" class="muted small"></p></div>`;
+  openModal('modal-general'); drawWheel();
+};
+window.spinGacha = async function() {
+  const btn = $('#spin-btn'), out = $('#spin-result'), wa = norm($('#spin-wa').value);
+  if (wa.length < 9) { toast('Isi nomor WhatsApp dulu.'); return; }
+  btn.disabled = true; const { data, error } = await sb.rpc('gh_spin', { p_wa: wa });
+  if (error) { out.textContent = '❌ ' + error.message; btn.disabled = false; return; }
+  localStorage.setItem('gh_wa', wa);
+  const pts = Number(data.points || 0), idx = data.voucher ? 3 : pts === 10 ? 1 : pts === 20 ? 2 : pts === 30 ? 3 : [0, 4, 5, 6, 7][Math.floor(Math.random() * 5)], cv = $('#spin-canvas');
+  cv.style.transition = 'transform 4.5s cubic-bezier(.12,.75,.12,1)'; cv.style.transform = `rotate(${360*6 + (360 - idx*45 - 22.5)}deg)`;
+  setTimeout(() => { out.textContent = data.voucher ? '🎉 Kamu dapat voucher: ' + data.voucher : '🎉 Kamu dapat ' + pts + ' poin!'; if (window.confetti) confetti({ particleCount: 100, spread: 65 }); btn.disabled = false; }, 4550);
+};
+
+/* Live Chat Bridge */
+let SID = localStorage.getItem('gh_chat_session'); if (!SID) { SID = 'SESS-' + Math.random().toString(36).slice(2, 10).toUpperCase(); localStorage.setItem('gh_chat_session', SID); }
+const seen = new Set(); let loaded = false, listening = false;
+const box = document.createElement('div'); box.id = 'gh-chat';
+box.innerHTML = '<div class="ghc-h"><b>💬 CS GH TopUp</b><button type="button" id="ghc-x" aria-label="Tutup chat">×</button></div><div class="ghc-m" id="ghc-m"></div><div class="ghc-in"><input id="ghc-i" placeholder="Ketik pesan..." maxlength="500" autocomplete="off"><button type="button" id="ghc-s" aria-label="Kirim"><i class="fa-solid fa-paper-plane"></i></button></div><a class="ghc-wa" id="ghc-wa" target="_blank" rel="noopener">Lanjut ke WhatsApp</a>';
+document.body.appendChild(box);
+const addMsg = (who, text) => { const m = $('#ghc-m'), d = document.createElement('div'); d.className = 'ghc-b ' + who; d.textContent = text; m.appendChild(d); m.scrollTop = m.scrollHeight; };
+addMsg('bot', 'Halo kak! 👋 Ada yang bisa CS bantu? Ketik pertanyaanmu di bawah.');
+const waLink = () => 'https://wa.me/' + ((typeof state !== 'undefined' && state.waAdmin) || '6283848591646') + '?text=' + encodeURIComponent('Halo Admin GH TopUp, kode chat saya: ' + SID);
+async function loadHistory() {
+  if (loaded || typeof sb === 'undefined' || !sb) return; loaded = true;
+  try { const { data } = await sb.from('chats').select('id,sender,message').eq('session_id', SID).order('created_at').limit(50); (data || []).forEach(m => { if (seen.has(m.id)) return; seen.add(m.id); addMsg(m.sender === 'buyer' ? 'buyer' : m.sender === 'admin' ? 'admin' : 'bot', m.message); }); } catch(e) {}
+}
+function listen() {
+  if (listening || typeof sb === 'undefined' || !sb) return; listening = true;
+  sb.channel('gh-chat-' + SID).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chats', filter: 'session_id=eq.' + SID }, p => {
+    const m = p.new || {}; if (m.sender !== 'admin' || seen.has(m.id)) return; seen.add(m.id); addMsg('admin', m.message);
+    if (!box.classList.contains('open')) { const f = $('.gh-chat-fab'); if (f) f.classList.add('has-new'); if (typeof toast === 'function') toast('💬 Balasan baru dari CS'); }
+  }).subscribe();
+}
+window.toggleChat = function(force) {
+  const open = typeof force === 'boolean' ? force : !box.classList.contains('open');
+  box.classList.toggle('open', open);
+  if (open) { const f = $('.gh-chat-fab'); if (f) f.classList.remove('has-new'); $('#ghc-wa').href = waLink(); loadHistory(); listen(); setTimeout(() => $('#ghc-i').focus({ preventScroll: true }), 80); }
+};
+async function sendChat() {
+  const i = $('#ghc-i'), t = i.value.trim(); if (!t) return; i.value = ''; addMsg('buyer', t);
+  if (typeof sb === 'undefined' || !sb) { addMsg('bot', 'Chat belum tersambung. Gunakan tombol WhatsApp di bawah.'); return; }
+  const { error } = await sb.from('chats').insert({ session_id: SID, sender: 'buyer', message: t });
+  if (error) addMsg('bot', 'Pesan gagal terkirim (' + error.message + '). Silakan lanjut lewat WhatsApp.');
+}
+$('#ghc-x').onclick = () => toggleChat(false); $('#ghc-s').onclick = sendChat;
+$('#ghc-i').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendChat(); } });
+listen();
+
+/* Hapus Tombol WA & Suntik Tombol Chat */
+function ensureFab() {
+  const f = document.querySelector('.floaters'); if (!f) return;
+  f.querySelectorAll('button').forEach(b => {
+    const oc = b.getAttribute('onclick') || '';
+    const wa = oc.includes('wa.me') || b.getAttribute('aria-label') === 'Hubungi WhatsApp' || b.querySelector('.fa-whatsapp');
+    const dupChat = b.querySelector('.fa-comments') && !b.classList.contains('gh-chat-fab');
+    if (wa || dupChat) b.remove();
+  });
+  let fab = f.querySelector('.gh-chat-fab');
+  if (!fab) { fab = document.createElement('button'); fab.id = 'btn-cs-final'; fab.type = 'button'; fab.className = 'float-btn gh-chat-fab'; fab.setAttribute('aria-label', 'Live Chat CS'); fab.innerHTML = '<i class="fa-solid fa-comments"></i>'; fab.onclick = () => toggleChat(); }
+  if (f.firstElementChild !== fab) f.insertBefore(fab, f.firstChild);
+}
+let raf = 0;
+new MutationObserver(() => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; ensureFab(); }); }).observe(document.body, { childList: true, subtree: true });
+setInterval(ensureFab, 500); ensureFab();
+
+/* Admin Login & Auth */
+let idleT = 0, lastReset = 0;
+function armIdle(force) {
+  const now = Date.now(); if (!force && now - lastReset < 5000) return; lastReset = now; clearTimeout(idleT);
+  if (sessionStorage.getItem(IS_ADMIN_FLAG) !== 'true') return;
+  idleT = setTimeout(() => { alert('Sesi admin berakhir karena 15 menit tanpa aktivitas.'); adminLogout(); }, 15 * 60 * 1000);
+}
+['mousemove', 'keydown', 'click', 'touchstart', 'scroll'].forEach(ev => document.addEventListener(ev, () => armIdle(false), { passive: true }));
+window.adminLogin = async function(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  if (typeof sb === 'undefined' || !sb) { alert('❌ Supabase belum tersambung.'); return; }
+  const email = ($('#admin-email').value || '').trim(), password = $('#admin-password').value || '';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) { alert('❌ Login gagal: ' + error.message); return; }
+  if (ADMIN_EMAILS.length && !ADMIN_EMAILS.map(x => x.toLowerCase()).includes((data.user.email || '').toLowerCase())) { await sb.auth.signOut(); alert('❌ Akun ini bukan admin.'); return; }
+  sessionStorage.setItem(IS_ADMIN_FLAG, 'true'); document.body.classList.add('admin-mode'); closeModal('modal-admin-login'); $('#admin-password').value = ''; await openAdmin(); armIdle(true);
+};
+window.openAdmin = async function() {
+  document.body.classList.add('admin-mode');
+  let s = null; try { const r = await sb.auth.getSession(); s = r.data && r.data.session; } catch(e) {}
+  if (!s) { sessionStorage.removeItem(IS_ADMIN_FLAG); openModal('modal-admin-login'); return; }
+  sessionStorage.setItem(IS_ADMIN_FLAG, 'true'); renderAdminDashboard(); openModal('modal-admin'); armIdle(true);
+};
+window.adminRoute = function() {
+  if (location.hash === '#admin' || sessionStorage.getItem(IS_ADMIN_FLAG) === 'true') { document.body.classList.add('admin-mode'); const n = document.getElementById('store-status-notice'); if (n) n.remove(); clearInterval(window.ghMaintenanceTimer); openAdmin(); return; }
+  document.body.classList.remove('admin-mode'); closeModal('modal-admin'); closeModal('modal-admin-login'); showStoreStatusNotice();
+};
+window.adminLogout = async function() {
+  clearTimeout(idleT); try { await sb.auth.signOut(); } catch(e) {}
+  sessionStorage.removeItem(IS_ADMIN_FLAG); history.replaceState(null, '', location.pathname + location.search); location.reload();
+};
+
+/* Admin CRUD */
+async function delRows(table, col, val) {
+  const { data, error } = await sb.from(table).delete().eq(col, val).select();
+  if (error) { alert('❌ Gagal hapus: ' + error.message); return false; }
+  if (!data || !data.length) { alert('❌ Tidak ada data yang terhapus. Kemungkinan RLS Supabase memblokir DELETE.'); return false; }
+  return true;
+}
+window.deleteProduct = async function(id, gameId) { if (!confirm('Yakin hapus produk ini?')) return; if (await delRows('products', 'id', id)) { alert('✅ Produk dihapus.'); loadAdminProducts(gameId); } };
+window.deleteGame = async function(id) { if (!confirm('Hapus game ini BESERTA semua produknya?')) return; const p = await sb.from('products').delete().eq('game_id', id); if (p.error) { alert('❌ Gagal hapus produk game: ' + p.error.message); return; } if (await delRows('games', 'id', id)) { alert('✅ Game dihapus.'); await loadGames(); loadAdminGames(); } };
+window.deleteBanner = async function(id) { if (!confirm('Yakin hapus banner ini?')) return; if (await delRows('banners', 'id', id)) { alert('✅ Banner dihapus.'); await loadBanners(); loadAdminBanners(); } };
+
+window.loadAdminGames = async function() {
+  const b = document.getElementById('admin-tab-content'); b.innerHTML = '<p class="muted">Memuat…</p>';
+  const { data, error } = await sb.from('games').select('*').order('sort_order');
+  if (error) { b.innerHTML = '<p>' + esc(error.message) + '</p>'; return; }
+  const rows = (data || []).slice().sort((x, y) => (Number(x.sort_order) || 9999) - (Number(y.sort_order) || 9999));
+  b.innerHTML = `<h3>Game</h3><p class="muted small">Nomor urut kecil tampil lebih dulu.</p><div class="tools-row"><button class="btn btn-primary" onclick="adminAddGame()">Tambah Game</button><button class="btn" onclick="addModernWarships()">Tambah MW Modern Warships</button></div><div class="table-wrap"><table><thead><tr><th>Urutan</th><th>Game</th><th>Kategori</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows.map(g => `<tr><td>${esc(g.sort_order ?? '-')}</td><td>${esc(g.name)}</td><td>${esc(g.category)}</td><td>${esc(g.status)}</td><td><button class="btn" onclick="toggleGameStatus('${esc(g.id)}','${g.status === 'online' ? 'coming_soon' : 'online'}')">Toggle</button> <button class="btn" onclick="loadAdminProducts('${esc(g.id)}')">Produk</button> <button class="btn" onclick="adminEditGame('${esc(g.id)}')">Edit</button> <button class="btn gh-del" onclick="deleteGame('${esc(g.id)}')">Hapus</button></td></tr>`).join('') || '<tr><td colspan="5">Belum ada game.</td></tr>'}</tbody></table></div><div id="admin-products"></div>`;
+};
+window.loadAdminProducts = async function(gameId) {
+  const b = document.getElementById('admin-products'); if (!b) return;
+  const { data, error } = await sb.from('products').select('*').eq('game_id', gameId).order('sort_order');
+  if (error) { b.textContent = error.message; return; }
+  b.innerHTML = `<h3>Produk</h3><button class="btn btn-primary" onclick="adminEditProduct(null,'${esc(gameId)}')">Tambah Produk</button><div class="table-wrap"><table><thead><tr><th>Pilih</th><th>Nama</th><th>Harga</th><th>Diskon</th><th>Aktif</th><th>Aksi</th></tr></thead><tbody>${(data || []).map(p => `<tr><td><input type="checkbox" value="${esc(p.id)}" class="prod-select"></td><td>${esc(p.name)}</td><td>${typeof money === 'function' ? money(p.price) : p.price}</td><td>${p.discount_price == null ? '-' : (typeof money === 'function' ? money(p.discount_price) : p.discount_price)}</td><td>${p.is_active ? 'Ya' : 'Tidak'}</td><td><button class="btn" onclick="adminEditProduct('${esc(p.id)}','${esc(gameId)}')">Edit</button> <button class="btn gh-del" onclick="deleteProduct('${esc(p.id)}','${esc(gameId)}')">Hapus</button></td></tr>`).join('') || '<tr><td colspan="6">Belum ada produk.</td></tr>'}</tbody></table></div><div class="tools-row"><select id="bulk-action" class="field"><option value="active">Aktifkan</option><option value="inactive">Nonaktifkan</option><option value="delete">Hapus</option><option value="raise">Naik harga X%</option><option value="lower">Turun harga X%</option></select><input class="field" id="bulk-percent" type="number" min="1" max="100" placeholder="Persen" style="max-width:100px"><button class="btn" onclick="bulkProducts('${esc(gameId)}')">Jalankan</button></div>`;
+};
+window.loadAdminBanners = async function() {
+  const b = document.getElementById('admin-tab-content'); b.innerHTML = '<h3>Banner</h3><p class="muted">Memuat…</p>';
+  const { data, error } = await sb.from('banners').select('*').order('sort_order');
+  if (error) { b.innerHTML = '<p>Gagal memuat banner: ' + esc(error.message) + '</p>'; return; }
+  b.innerHTML = `<h3>Manajemen Banner</h3><div class="glass panel" style="margin:14px 0"><h4>Tambah Banner</h4><div class="form-row"><input id="banner-new-title" class="field" placeholder="Judul (opsional)"></div><div class="form-row"><input id="banner-new-url" class="field" type="url" placeholder="Link gambar https://..."></div><div class="form-row"><input id="banner-new-order" class="field" type="number" min="1" value="${(data || []).length + 1}"></div><label style="display:flex;gap:8px;align-items:center"><input id="banner-new-active" type="checkbox" checked> Aktifkan</label><button class="btn btn-primary" style="margin-top:10px" onclick="addAdminBanner()">Simpan Banner</button></div><div class="table-wrap"><table><thead><tr><th>Judul</th><th>Gambar</th><th>Urutan</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${(data || []).map(x => `<tr><td>${esc(x.title || '-')}</td><td><a href="${esc(x.image_url)}" target="_blank" rel="noopener">Lihat</a></td><td>${esc(x.sort_order ?? '-')}</td><td>${x.is_active ? 'Aktif' : 'Mati'}</td><td><button class="btn gh-del" onclick="deleteBanner('${esc(x.id)}')">Hapus</button></td></tr>`).join('') || '<tr><td colspan="5">Belum ada banner.</td></tr>'}</tbody></table></div>`;
+};
+
+window.saveAdminSettings = async function(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  if (typeof sb === 'undefined' || !sb) { alert('❌ Supabase belum tersambung. Pengaturan tidak disimpan.'); return; }
+  const g = id => document.getElementById(id), ck = id => String(g(id).checked), fe = g('set-flash-end').value;
+  const entries = { wa_admin: g('set-wa').value.trim(), running_text: g('set-running').value, active_web_theme: g('set-theme').value, seasonal_theme: g('set-season').value, admin_fee_qris: g('set-fee').value, qris_image_url: g('set-qris').value, store_status: g('set-status').value, store_message: g('set-message').value, setup_game: g('set-setup-game').value, flash_sale_enabled: g('set-flash').value, flash_sale_title: g('set-flash-title').value, flash_sale_end: fe ? new Date(fe).toISOString() : '', bank_name: g('set-bank').value, bank_account: g('set-bank-account').value, bank_holder: g('set-bank-holder').value, ewallet_name: g('set-ewallet').value, ewallet_account: g('set-ewallet-account').value, qris_enabled: ck('set-qris-enabled'), bank_enabled: ck('set-bank-enabled'), ewallet_enabled: ck('set-ewallet-enabled'), coming_soon_open: ck('set-coming'), point_event_active: ck('set-points') };
+  const rows = Object.entries(entries).map(([key, value]) => ({ key, value: String(value) }));
+  const { data, error } = await sb.from('settings').upsert(rows, { onConflict: 'key' }).select();
+  if (error) { alert('❌ GAGAL SIMPAN PENGATURAN:\n' + error.message + (/row-level|policy|permission|denied/i.test(error.message) ? '\n\nRLS Supabase memblokir. Jalankan file SQL setup dan pastikan kamu login sebagai admin.' : '')); return; }
+  if (!data || data.length < rows.length) { alert('⚠️ Hanya ' + (data ? data.length : 0) + ' dari ' + rows.length + ' pengaturan yang tersimpan. Cek RLS tabel settings.'); return; }
+  Object.assign(state.settings, entries); state.waAdmin = entries.wa_admin; state.adminFee = Number(entries.admin_fee_qris); state.qrisUrl = entries.qris_image_url; state.storeStatus = entries.store_status; state.storeMessage = entries.store_message; state.setupGame = entries.setup_game; state.flashEnabled = entries.flash_sale_enabled === 'true'; state.flashTitle = entries.flash_sale_title; state.flashEnd = entries.flash_sale_end; applyWebTheme(entries.active_web_theme); applySeasonalTheme(entries.seasonal_theme); document.getElementById('running-text').textContent = entries.running_text; alert('✅ Pengaturan berhasil disimpan!');
+};
+
+/* Admin Reports */
+window.loadAdminReports = async function() {
+  const b = document.getElementById('admin-tab-content'); b.innerHTML = '<h3>Laporan</h3><p class="muted">Menghitung…</p>';
+  const { data, error } = await sb.from('orders').select('*').order('created_at', { ascending: false }).limit(2000);
+  if (error) { b.innerHTML = '<p>Gagal memuat laporan: ' + esc(error.message) + '</p>'; return; }
+  const ok = (data || []).filter(o => o.status === 'success'), omzet = ok.reduce((a, o) => a + Number(o.total_amount || 0), 0), by = {};
+  ok.forEach(o => { by[o.game_name] = (by[o.game_name] || 0) + 1; });
+  const top = Object.entries(by).sort((x, y) => y[1] - x[1]).slice(0, 5);
+  state.orders = ok;
+  b.innerHTML = `<h3>Laporan Penjualan</h3><div class="module-grid"><div class="glass panel"><small class="muted">Total omzet</small><h2>${typeof money === 'function' ? money(omzet) : omzet}</h2></div><div class="glass panel"><small class="muted">Transaksi sukses</small><h2>${ok.length}</h2></div><div class="glass panel"><small class="muted">Game terlaris</small><h2>${esc(top[0] ? top[0][0] : '-')}</h2></div></div><div class="table-wrap"><table><thead><tr><th>Game</th><th>Transaksi sukses</th></tr></thead><tbody>${top.map(t => `<tr><td>${esc(t[0])}</td><td>${t[1]}</td></tr>`).join('') || '<tr><td colspan="2">Belum ada transaksi sukses.</td></tr>'}</tbody></table></div><p class="muted small">Dihitung dari maksimal 2.000 pesanan terbaru.</p><button class="btn btn-primary" onclick="exportOrdersCsv()">Export CSV (pesanan sukses)</button>`;
+};
+
+/* Admin Chat tab */
+const _rd = window.renderAdminDashboard, _nav = window.adminNav;
+window.renderAdminDashboard = function() { _rd(); const t = $('.admin-tabs'); if (t) t.insertAdjacentHTML('beforeend', '<button data-tab="chat" onclick="adminNav(\'chat\')">Live Chat</button>'); };
+window.adminNav = function(tab) {
+  if (tab !== 'chat') return _nav(tab);
+  document.querySelectorAll('.admin-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === 'chat')); loadAdminChat();
+};
+window.loadAdminChat = async function(sess) {
+  const b = $('#admin-tab-content');
+  const { data, error } = await sb.from('chats').select('*').order('created_at', { ascending: false }).limit(300);
+  if (error) { b.innerHTML = '<p>' + esc(error.message) + '</p>'; return; }
+  const by = {}; (data || []).forEach(m => { (by[m.session_id] = by[m.session_id] || []).push(m); });
+  if (sess) {
+    const ms = (by[sess] || []).slice().reverse();
+    b.innerHTML = `<button class="btn" onclick="loadAdminChat()">← Semua chat</button><h3>${esc(sess)}</h3><div style="max-height:50vh;overflow:auto;display:flex;flex-direction:column;gap:6px;margin:10px 0">${ms.map(m => `<div class="ghc-b ${m.sender === 'admin' ? 'buyer' : 'bot'}">${esc(m.message)}</div>`).join('')}</div><div style="display:flex;gap:8px"><input class="field" id="adm-reply" placeholder="Balasan..."><button class="btn btn-primary" onclick="adminReply('${esc(sess)}')">Kirim</button></div>`;
+    await sb.from('chats').update({ is_read: true }).eq('session_id', sess).eq('sender', 'buyer'); return;
+  }
+  b.innerHTML = `<h3>Live Chat</h3><div class="table-wrap"><table><thead><tr><th>Sesi</th><th>Pesan terakhir</th><th>Belum dibaca</th><th></th></tr></thead><tbody>${Object.entries(by).map(([s, m]) => `<tr><td>${esc(s)}</td><td>${esc(String(m[0].message).slice(0, 60))}</td><td>${m.filter(x => x.sender === 'buyer' && !x.is_read).length}</td><td><button class="btn" onclick="loadAdminChat('${esc(s)}')">Buka</button></td></tr>`).join('') || '<tr><td colspan="4">Belum ada chat.</td></tr>'}</tbody></table></div>`;
+};
+window.adminReply = async function(s) { const i = $('#adm-reply'), t = i.value.trim(); if (!t) return; const { error } = await sb.from('chats').insert({ session_id: s, sender: 'admin', message: t }); if (error) { alert('❌ Gagal kirim: ' + error.message); return; } loadAdminChat(s); };
+
+window.renderSpinAdmin = function() {
+  $('#admin-tab-content').innerHTML = `<h3>Spin Gacha</h3><div class="module-note">Peluang tetap: 80% = 5 poin, 15% = 10, 4% = 20, 1% = 30. Isi kode voucher agar hadiah 1% jadi voucher (kosongkan = 30 poin).</div><div class="form-row"><label>Kode voucher jackpot</label><input class="field" id="spin-voucher" value="${esc(state.settings.spin_jackpot_voucher || '')}"></div><button class="btn btn-primary" onclick="saveSpinVoucher()">Simpan</button>`;
+};
+window.saveSpinVoucher = async function() {
+  const v = $('#spin-voucher').value.trim().toUpperCase();
+  const { error } = await sb.from('settings').upsert({ key: 'spin_jackpot_voucher', value: v }, { onConflict: 'key' });
+  if (error) { alert('❌ Gagal simpan: ' + error.message); return; } state.settings.spin_jackpot_voucher = v; alert('✅ Tersimpan.');
+};
+
+/* Auto-Cleanup */
+async function cleanup() {
+  if (Date.now() - Number(localStorage.getItem('gh_cleanup') || 0) < 12 * 3600e3) return;
+  localStorage.setItem('gh_cleanup', String(Date.now()));
+  await sb.rpc('gh_cleanup_db');
+  try { const bk = sb.storage.from('bukti-transfer'), { data } = await bk.list('', { limit: 1000 }); const old = (data || []).filter(f => f.created_at && Date.now() - new Date(f.created_at) > 3 * 864e5).map(f => f.name); if (old.length) await bk.remove(old); } catch(e) { console.warn('cleanup storage', e); }
+}
+const _oa = window.openAdmin;
+window.openAdmin = async function() { await _oa(); if (sessionStorage.getItem('gh_admin') === 'true') cleanup(); };
+
+})();
 </script>
 </script>
 </body>
