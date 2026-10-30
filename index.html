@@ -423,16 +423,27 @@ document.addEventListener('DOMContentLoaded',async()=>{initGraphicsQuality();doc
 
 </script>
 <script>
-// --- JARING PENGAMAN LOGIN ---
+// --- JARING PENGAMAN LOGIN V2 (AUTO DETEKSI KOLOM) ---
 window.adminLogin = async function(e) {
   if(e) e.preventDefault();
   
   try {
-    const emailEl = document.getElementById("adminEmail");
-    const passEl = document.getElementById("adminPassword");
+    // 1. Cari form pembungkusnya dulu
+    const form = e && e.target ? (e.target.tagName === 'FORM' ? e.target : e.target.closest('form')) : document;
     
+    // 2. Cari kolom input secara otomatis (berdasarkan tipe atau ID lama)
+    const emailEl = form.querySelector('input[type="email"]') || 
+                    form.querySelector('input[name="email"]') || 
+                    document.getElementById("adminEmail") || 
+                    form.querySelector('input[placeholder*="mail" i]'); // Cari yg ada tulisan email
+
+    const passEl = form.querySelector('input[type="password"]') || 
+                   form.querySelector('input[name="password"]') || 
+                   document.getElementById("adminPassword") || 
+                   form.querySelector('input[placeholder*="ass" i]'); // Cari yg ada tulisan pass
+
     if (!emailEl || !passEl) {
-      alert("❌ ERROR: Kolom email/password tidak ditemukan!");
+      alert("❌ Masih gagal nemu kolom email/password. Coba cek form login lu.");
       return;
     }
 
@@ -444,16 +455,16 @@ window.adminLogin = async function(e) {
       return;
     }
 
-    alert("⏳ Sedang menghubungi Supabase..."); // Jebakan Loading
+    alert("⏳ Menghubungi Supabase dengan email: " + email); 
 
+    // 3. Tembak Supabase
     let hasilLogin;
-    // Cek apakah pakai Supabase versi baru atau lama
     if (sb.auth.signInWithPassword) {
       hasilLogin = await sb.auth.signInWithPassword({ email, password });
     } else if (sb.auth.signIn) {
       hasilLogin = await sb.auth.signIn({ email, password });
     } else {
-      alert("❌ ERROR: Fungsi login Supabase tidak dikenali!");
+      alert("❌ ERROR: Fungsi login Supabase gak dikenali!");
       return;
     }
 
@@ -464,7 +475,7 @@ window.adminLogin = async function(e) {
       return;
     }
 
-    // Kalau sukses
+    // 4. Kalau sukses
     alert("✅ LOGIN SUKSES BOS!");
     sessionStorage.setItem("gh_admin", "true");
     document.body.classList.add("admin-mode");
@@ -472,7 +483,6 @@ window.adminLogin = async function(e) {
     if (typeof openAdmin === 'function') openAdmin();
     
   } catch (err) {
-    // Ini bakal nangkep error apapun dan nampilin pesannya
     alert("❌ SYSTEM ERROR: " + err.message);
   }
 };
