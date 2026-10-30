@@ -214,7 +214,7 @@ body.gfx-max #gh-starfield{opacity:.9}
 <button class="gh-intro-skip" type="button" onclick="hideGhIntro()">LEWATI INTRO ↗</button>
 </div>
 
-
+ 
 <header><div class="wrap header-inner">
 <a href="#" class="brand" onclick="navigate('home');return false"><img loading="lazy" src="https://i.ibb.co.com/LXTcGMmZ/file-0000000057008211a92ec92562f1c4d8.png" alt="Logo GH TopUp"><div><div class="brand-name">GH TOPUP</div><small>GAME • FAST • EASY</small></div></a>
 <div class="head-actions"><span class="online" id="online-count">🟢 1 Online</span><button class="icon-btn" onclick="toggleLight()" aria-label="Mode malam atau siang"><i class="fa-solid fa-moon" aria-label="Mode tampilan"></i></button><button class="icon-btn" onclick="openNotifications()" aria-label="Notifikasi"><i class="fa-regular fa-bell" aria-label="Notifikasi"></i><sup id="notif-badge"></sup></button></div>
@@ -794,6 +794,47 @@ if (typeof sb !== 'undefined' && sb) {
         }
       }
     }, 1000);
+  });
+ <style>
+  /* Sembunyikan total tombol WA pakai target CSS yang paling kuat */
+  .floaters button[aria-label="Hubungi WhatsApp"],
+  .floaters button[onclick*="wa.me"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+ }
+<script>
+  // Tunggu sampai web bener-bener selesai loading
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      const floaters = document.querySelector('.floaters');
+      
+      // Kalau menu melayangnya ketemu, dan tombol CS belum ada
+      if (floaters && !document.getElementById('btn-cs-new')) {
+        
+        // Bikin tombol CS baru
+        const csBtn = document.createElement('button');
+        csBtn.id = 'btn-cs-new';
+        csBtn.className = 'float-btn';
+        csBtn.innerHTML = '<i class="fa-solid fa-comments"></i>';
+        csBtn.style.cssText = 'background: #00a0ff; color: white; margin-bottom: 10px; z-index: 999999; position: relative;';
+        csBtn.setAttribute('aria-label', 'Hubungi CS');
+        
+        // Pas diklik, buka Live Chat
+        csBtn.onclick = function() {
+          if (typeof toggleChat === 'function') toggleChat();
+          else alert('Sistem chat belum siap.');
+        };
+        
+        // Taruh di paling atas (sebelum tombol kado & spin)
+        floaters.insertBefore(csBtn, floaters.firstChild);
+      }
+    }, 1000); // Tunggu 1 detik biar web stabil dulu
   });
 </script>
 </body>
