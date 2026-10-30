@@ -1276,6 +1276,54 @@ document.addEventListener('DOMContentLoaded', function() {
   }, 1000); // Cek tiap detik
 });
 </script>
+ <script>
+// Script Penyelamat Tombol (CS, Referral, Spin)
+setInterval(function() {
+  const floaters = document.querySelector('.floaters');
+  if (!floaters) return;
+
+  // 1. Bersihkan semua tombol lama (Biar WA gak balik lagi)
+  floaters.innerHTML = '';
+
+  // 2. Tombol CS (Warna Biru)
+  if (!document.getElementById('btn-cs-sultan')) {
+    const csBtn = document.createElement('button');
+    csBtn.id = 'btn-cs-sultan';
+    csBtn.className = 'float-btn';
+    csBtn.innerHTML = '<i class="fa-solid fa-comments"></i>';
+    csBtn.style.cssText = 'background: #00a0ff; color: #fff; display: flex; align-items: center; justify-content: center;';
+    csBtn.onclick = function() { 
+      if (typeof window.toggleChatCS === 'function') window.toggleChatCS(); 
+    };
+    floaters.appendChild(csBtn);
+  }
+
+  // 3. Tombol Referral (Ikon Kado)
+  if (!document.getElementById('btn-ref-sultan')) {
+    const refBtn = document.createElement('button');
+    refBtn.id = 'btn-ref-sultan';
+    refBtn.className = 'float-btn';
+    refBtn.innerHTML = '<i class="fa-solid fa-gift"></i>';
+    refBtn.onclick = function() { 
+      if (typeof openReferral === 'function') openReferral(); 
+    };
+    floaters.appendChild(refBtn);
+  }
+
+  // 4. Tombol Spin (Ikon Roda)
+  if (!document.getElementById('btn-spin-sultan')) {
+    const spinBtn = document.createElement('button');
+    spinBtn.id = 'btn-spin-sultan';
+    spinBtn.className = 'float-btn';
+    spinBtn.innerHTML = '<i class="fa-solid fa-dharmachakra"></i>';
+    spinBtn.onclick = function() { 
+      if (typeof openSpin === 'function') openSpin(); 
+    };
+    floaters.appendChild(spinBtn);
+  }
+
+}, 1000); // Cek tiap detik biar gak bisa dihapus sama kode lama
+</script>
 </script>
 </body>
 </html>
