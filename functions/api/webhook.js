@@ -5,7 +5,7 @@ export async function onRequestPost(context) {
     const body = await request.json();
     
     // ==========================================
-    // BAGIAN 1: NANGKEP PESAN DARI TELEGRAM (Admin / CS)
+    // BAGIAN 1: NANGKEP PESAN DARI TELEGRAM (Admin Balas Chat)
     // ==========================================
     if (body.update_id) {
       const botToken = env.TELEGRAM_BOT_TOKEN;
@@ -15,8 +15,10 @@ export async function onRequestPost(context) {
         const text = body.message.text;
         const fromId = body.message.from.id;
         
-        // --- LOGIKA BOT ADMIN ---
+        // Cek apakah yang chat beneran Admin
         if (String(fromId) === String(chatIdAdmin)) {
+          
+          // Command /menu
           if (text === '/menu' || text === '/start') {
             const keyboard = {
               inline_keyboard: [
@@ -26,6 +28,8 @@ export async function onRequestPost(context) {
             };
             await sendTelegram(botToken, chatIdAdmin, "🤖 *PUSAT KENDALI GH TOPUP*\nMau ngapain hari ini, Bos?", keyboard);
           }
+
+          // Command /balas (Eskalasi CS dari Web ke Telegram)
           else if (text.startsWith('/balas ')) {
             const parts = text.split(' ');
             const sessionId = parts[1];
@@ -37,7 +41,7 @@ export async function onRequestPost(context) {
               headers: { 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({ session_id: sessionId, sender: 'admin', message: replyMsg })
             });
-            await sendTelegram(botToken, chatIdAdmin, `✅ Balasan terkirim ke sesi ${sessionId}`);
+            await sendTelegram(botToken, chatIdAdmin, `✅ Balasan terkirim ke sesi web: ${sessionId}`);
           }
         }
       }
@@ -45,7 +49,7 @@ export async function onRequestPost(context) {
     }
 
     // ==========================================
-    // BAGIAN 2: NANGKEP CHAT BARU DARI WEB (SUPABASE WEBHOOK)
+    // BAGIAN 2: NANGKEP CHAT BARU DARI WEB (Supabase Webhook)
     // ==========================================
     if (body.table === 'chats' && body.type === 'INSERT') {
       const chat = body.record;
@@ -87,6 +91,7 @@ export async function onRequestPost(context) {
   }
 }
 
+// Fungsi Bantuan buat nembak API Telegram
 async function sendTelegram(token, chatId, text, keyboard = null) {
   const payload = { chat_id: chatId, text: text, parse_mode: 'Markdown' };
   if (keyboard) payload.reply_markup = keyboard;
