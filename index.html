@@ -755,6 +755,19 @@ if (typeof sb !== 'undefined' && sb) {
     })
     .subscribe();
 }
+ <script>
+// --- PAKSA SEMBUNYIIN TOMBOL WA ---
+document.addEventListener('DOMContentLoaded', () => {
+  const floatingButtons = document.querySelectorAll('.floaters button');
+  floatingButtons.forEach(btn => {
+    // Kalau tombolnya ada tulisan WA atau link wa.me, hapus paksa
+    if (btn.innerHTML.includes('whatsapp') || btn.getAttribute('onclick')?.includes('wa.me')) {
+      btn.style.setProperty('display', 'none', 'important');
+      btn.style.setProperty('opacity', '0', 'important');
+      btn.style.setProperty('visibility', 'hidden', 'important');
+    }
+  });
+});
 </script>
 </body>
 </html>
