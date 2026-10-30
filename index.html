@@ -836,6 +836,24 @@ if (typeof sb !== 'undefined' && sb) {
       }
     }, 1000); // Tunggu 1 detik biar web stabil dulu
   });
+ <script>
+setTimeout(function() {
+    // 1. Hapus fisik tombol WA dari layar
+    var wa = document.querySelector('button[onclick*="wa.me"]');
+    if(wa) wa.remove();
+    
+    // 2. Paksa munculin tombol Chat biru
+    var menu = document.querySelector('.floaters');
+    if(menu) {
+        var btn = document.createElement('button');
+        btn.className = 'float-btn';
+        btn.innerHTML = '<i class="fa-solid fa-comments"></i>';
+        btn.style = 'background:#00a0ff;color:white;margin-bottom:10px;';
+        btn.onclick = function(){ toggleChat(); };
+        menu.insertBefore(btn, menu.firstChild);
+    }
+}, 2000); // Tunggu 2 detik biar web kebuka dulu
+</script>
 </script>
 </body>
 </html>
