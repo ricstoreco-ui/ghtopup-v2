@@ -1205,31 +1205,77 @@ window.openAdmin = async function() { await _oa(); if (sessionStorage.getItem('g
 </script>
  <style>
   .floaters button:nth-child(1) { display: none !important; }
-</style>
- <script>
-// Tunggu 3 detik biar web selesai loading
-setTimeout(function() {
-    const floaters = document.querySelector('.floaters');
-    if (!floaters) return;
+<style>
+  /* Paksa sembunyiin semua tombol lama di menu melayang */
+  .floaters > button { 
+    display: none !important; 
+    visibility: hidden !important; 
+    opacity: 0 !important; 
+  }
+  
+  /* Styling khusus buat tombol CS kita */
+  #btn-cs-sultan {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: fixed !important;
+    right: 14px !important;
+    bottom: 150px !important;
+    width: 55px !important;
+    height: 55px !important;
+    background: #00a0ff !important;
+    color: white !important;
+    border-radius: 50% !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 24px !important;
+    z-index: 999999 !important;
+    box-shadow: 0 4px 15px rgba(0,160,255,0.5) !important;
+    cursor: pointer !important;
+    border: 2px solid #fff !important;
+  }
 
-    // 1. Hapus tombol CS lama kalau ada (biar gak dobel)
-    floaters.querySelectorAll('#btn-cs-final, .gh-chat-fab').forEach(el => el.remove());
-
-    // 2. Bikin tombol baru
-    const fab = document.createElement('button');
-    fab.id = 'btn-cs-final';
-    fab.innerHTML = '<i class="fa-solid fa-comments"></i>';
-    fab.onclick = function() { 
-        if (typeof toggleChat === 'function') toggleChat(); 
-        else alert('Fitur chat belum siap.'); 
+  /* Paksa benerin posisi kotak chatnya biar gak ngebug */
+  #gh-chat {
+    bottom: 215px !important;
+    z-index: 999998 !important;
+  }
+ </style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // 1. Bikin tombol CS baru dari nol
+  function createSultanCS() {
+    if (document.getElementById('btn-cs-sultan')) return;
+    
+    const btn = document.createElement('button');
+    btn.id = 'btn-cs-sultan';
+    btn.innerHTML = '<i class="fa-solid fa-comments"></i>';
+    
+    // Pas diklik, buka chat
+    btn.onclick = function() {
+      if (typeof toggleChat === 'function') {
+        toggleChat();
+      } else {
+        alert('Sistem chat lagi loading, coba sebentar lagi.');
+      }
     };
     
-    // 3. PAKSA TAMPIL DENGAN INLINE STYLE (Gak bisa dikalahin CSS!)
-    fab.style.cssText = "display: flex !important; visibility: visible !important; opacity: 1 !important; background: #00a0ff !important; color: white !important; margin-bottom: 10px !important; z-index: 99999 !important; position: relative !important; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); font-size: 20px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,160,255,0.4);";
+    document.body.appendChild(btn);
+  }
 
-    // 4. Taruh di PALING BAWAH tumpukan (biar gak kena aturan tombol pertama)
-    floaters.appendChild(fab);
-}, 3000);
+  // 2. Bersihin semua sampah tombol WA/CS lama secara berkala
+  setInterval(function() {
+    // Hapus paksa semua tombol asli di menu melayang
+    const floaters = document.querySelector('.floaters');
+    if (floaters) {
+      floaters.querySelectorAll('button').forEach(b => b.remove());
+    }
+    
+    // Panggil tombol CS kita
+    createSultanCS();
+  }, 1000); // Cek tiap detik
+});
+</script>
 </script>
 </body>
 </html>
