@@ -755,20 +755,46 @@ if (typeof sb !== 'undefined' && sb) {
     })
     .subscribe();
 }
+<style>
+  /* 1. Posisi Tombol Live Chat (CS) biar pas di atas tombol WA */
+  #gh-chat-btn {
+    bottom: 160px !important; 
+    background: #00a0ff !important; 
+    color: #fff !important;
+    box-shadow: 0 4px 15px rgba(0, 160, 255, 0.4) !important;
+  }
+  
+  /* 2. Posisi normal menu melayang */
+  .floaters {
+    bottom: 92px !important;
+  }
+</style>
+
 <script>
-  // Hapus elemen secara fisik dari HTML setelah halaman dimuat
+  // 3. Ubah Tombol WA jadi "Coming Soon"
   document.addEventListener('DOMContentLoaded', () => {
     setInterval(() => {
       const floaters = document.querySelector('.floaters');
       if (floaters) {
         const waBtn = floaters.querySelector('button');
-        if (waBtn) {
-          waBtn.remove(); // Hapus permanen dari layar
+        // Cek kalau ini masih tombol WA
+        if (waBtn && waBtn.innerHTML.includes('whatsapp')) {
+          // Matikan fungsi klik
+          waBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof toast === 'function') toast('Fitur WhatsApp sedang maintenance. Gunakan Live Chat!');
+            else alert('Fitur WhatsApp sedang maintenance. Gunakan Live Chat!');
+          };
+          // Ganti ikon jadi Jam dan warna abu-abu
+          waBtn.innerHTML = '<i class="fa-solid fa-clock"></i>';
+          waBtn.style.background = '#444'; 
+          waBtn.style.color = '#fff';
+          waBtn.setAttribute('aria-label', 'Coming Soon');
         }
       }
-    }, 500); // Cek terus-terusan tiap 0.5 detik
+    }, 1000);
   });
- 
 </script>
 </body>
 </html>
