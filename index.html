@@ -854,6 +854,36 @@ setTimeout(function() {
     }
 }, 2000); // Tunggu 2 detik biar web kebuka dulu
 </script>
+ <script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Satpam pemantau perubahan layar
+  const observer = new MutationObserver(function() {
+    const floaters = document.querySelector('.floaters');
+    if (!floaters) return;
+
+    // 1. Cari tombol WA dan HANCURKAN!
+    const waBtn = floaters.querySelector('button[onclick*="wa.me"], button[aria-label="Hubungi WhatsApp"]');
+    if (waBtn) {
+      waBtn.remove();
+    }
+
+    // 2. Pasang Tombol CS kalau belum ada
+    if (!document.getElementById('btn-cs-final')) {
+      const btn = document.createElement('button');
+      btn.id = 'btn-cs-final';
+      btn.className = 'float-btn';
+      btn.innerHTML = '<i class="fa-solid fa-comments"></i>';
+      btn.style.cssText = 'background:#00a0ff;color:white;margin-bottom:10px;display:flex;align-items:center;justify-content:center;';
+      btn.onclick = function() { if(typeof toggleChat === 'function') toggleChat(); };
+      
+      floaters.insertBefore(btn, floaters.firstChild);
+    }
+  });
+
+  // Mulai pantau seluruh halaman
+  observer.observe(document.body, { childList: true, subtree: true });
+});
+</script>
 </script>
 </body>
 </html>
