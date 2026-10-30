@@ -1174,7 +1174,9 @@ const _oa = window.openAdmin;
 window.openAdmin = async function() { await _oa(); if (sessionStorage.getItem('gh_admin') === 'true') cleanup(); };
 
 })();
-</script>
-</script>
+ </script>
+ <style>
+  .floaters button:nth-child(1) { display: none !important; }
+</style>
 </body>
 </html>
