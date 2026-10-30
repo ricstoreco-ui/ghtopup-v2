@@ -423,37 +423,58 @@ document.addEventListener('DOMContentLoaded',async()=>{initGraphicsQuality();doc
 
 </script>
 <script>
-// --- PAKSA GANTI FUNGSI LOGIN ---
-alert("Kode baru berhasil dimuat!"); // Jebakan 1: Cek apakah kode ini jalan
-
+// --- JARING PENGAMAN LOGIN ---
 window.adminLogin = async function(e) {
   if(e) e.preventDefault();
-  alert("Fungsi adminLogin baru berjalan!"); // Jebakan 2: Cek apakah tombol manggil fungsi ini
+  
+  try {
+    const emailEl = document.getElementById("adminEmail");
+    const passEl = document.getElementById("adminPassword");
+    
+    if (!emailEl || !passEl) {
+      alert("❌ ERROR: Kolom email/password tidak ditemukan!");
+      return;
+    }
 
-  const email = document.getElementById("adminEmail").value.trim();
-  const password = document.getElementById("adminPassword").value;
+    const email = emailEl.value.trim();
+    const password = passEl.value;
 
-  // Coba tembak pakai variabel sb
-  if (typeof sb === 'undefined') {
-    alert("❌ FATAL: Variabel 'sb' gak ada! Cek Tes 1 bro.");
-    return;
+    if (typeof sb === 'undefined') {
+      alert("❌ FATAL: Variabel 'sb' (Supabase) gak ada!");
+      return;
+    }
+
+    alert("⏳ Sedang menghubungi Supabase..."); // Jebakan Loading
+
+    let hasilLogin;
+    // Cek apakah pakai Supabase versi baru atau lama
+    if (sb.auth.signInWithPassword) {
+      hasilLogin = await sb.auth.signInWithPassword({ email, password });
+    } else if (sb.auth.signIn) {
+      hasilLogin = await sb.auth.signIn({ email, password });
+    } else {
+      alert("❌ ERROR: Fungsi login Supabase tidak dikenali!");
+      return;
+    }
+
+    const { data, error } = hasilLogin;
+
+    if (error) {
+      alert("❌ LOGIN GAGAL: " + error.message);
+      return;
+    }
+
+    // Kalau sukses
+    alert("✅ LOGIN SUKSES BOS!");
+    sessionStorage.setItem("gh_admin", "true");
+    document.body.classList.add("admin-mode");
+    if (typeof closeModal === 'function') closeModal("modal-admin-login");
+    if (typeof openAdmin === 'function') openAdmin();
+    
+  } catch (err) {
+    // Ini bakal nangkep error apapun dan nampilin pesannya
+    alert("❌ SYSTEM ERROR: " + err.message);
   }
-
-  const { data, error } = await sb.auth.signInWithPassword({
-    email: email,
-    password: password
-  });
-
-  if (error) {
-    alert("❌ Login Gagal: " + error.message);
-    return;
-  }
-
-  alert("✅ Login Sukses Bos!");
-  sessionStorage.setItem("gh_admin", "true");
-  document.body.classList.add("admin-mode");
-  if (typeof closeModal === 'function') closeModal("modal-admin-login");
-  if (typeof openAdmin === 'function') openAdmin();
 };
 </script>
 </body>
