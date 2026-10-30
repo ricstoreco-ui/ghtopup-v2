@@ -422,5 +422,50 @@ document.addEventListener('pointerdown',function(e){
 document.addEventListener('DOMContentLoaded',async()=>{initGraphicsQuality();document.getElementById('year').textContent=new Date().getFullYear();applyWebTheme(localStorage.getItem('gh_web_theme')||'chrome');if(localStorage.getItem('gh_light')==='true')document.body.classList.add('light');const hashAdmin=location.hash==='#admin'||sessionStorage.getItem('gh_admin')==='true';if(hashAdmin)document.body.classList.add('admin-mode');let introSeen=false;try{introSeen=sessionStorage.getItem('gh_intro_seen')==='1'}catch(e){}if(hashAdmin||introSeen)hideGhIntro();else setTimeout(hideGhIntro,4600);if(hashAdmin){document.getElementById('store-status-notice')?.remove();clearInterval(window.ghMaintenanceTimer);}await loadStoreStatus();await Promise.all([loadGames(),loadBanners(),loadReviews()]);renderPage();if(hashAdmin)adminRoute();window.addEventListener('hashchange',()=>{if(location.hash==='#admin')adminRoute();else if(sessionStorage.getItem('gh_admin')!=='true'){document.body.classList.remove('admin-mode');showStoreStatusNotice()}});if(sb){const channel=sb.channel('gh-orders-realtime').on('postgres_changes',{event:'*',schema:'public',table:'orders'},()=>{if(sessionStorage.getItem('gh_admin')==='true'&&state.page==='admin')toast('Data pesanan berubah.');}).subscribe();window.ghRealtime=channel} });
 
 </script>
+<script>
+ // --- HIJACK FORM LOGIN LAMA ---
+setTimeout(() => {
+  const emailInput = document.getElementById("adminEmail");
+  const passInput = document.getElementById("adminPassword");
+  
+  if (emailInput && passInput) {
+    // Cari form pembungkusnya
+    const form = emailInput.closest("form");
+    
+    if (form) {
+      // Timpa paksa fungsi submit-nya
+      form.onsubmit = async function(e) {
+        e.preventDefault(); // Tahan form biar gak reload
+        
+        const email = emailInput.value.trim();
+        const password = passInput.value;
+        
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn) btn.disabled = true;
+
+        // Tembak ke Supabase
+        const { data, error } = await sb.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
+
+        if (btn) btn.disabled = false;
+
+        if (error) {
+          alert("Login gagal: " + error.message);
+          return;
+        }
+
+        // Kalau sukses
+        sessionStorage.setItem("gh_admin", "true");
+        document.body.classList.add("admin-mode");
+        if (typeof closeModal === 'function') closeModal("modal-admin-login");
+        if (typeof openAdmin === 'function') openAdmin();
+        alert("Login Berhasil, Bos!");
+      };
+    }
+  }
+}, 1000); // Tunggu 1 detik biar web selesai loading
+</script>
 </body>
 </html>
