@@ -423,48 +423,212 @@ document.addEventListener('DOMContentLoaded',async()=>{initGraphicsQuality();doc
 
 </script>
 <script>
-// --- LOGIN ADMIN SUPABASE (VERSI BERSIH) ---
+// =====================================================================
+// 🚀 MISI 2: MASTER PATCH ADMIN (LOGIN, CRUD, SETTINGS, KEAMANAN)
+// =====================================================================
+
+// --- 1. LOGIN & LOGOUT ADMIN (SUPABASE AUTH) ---
 window.adminLogin = async function(e) {
   if(e) e.preventDefault();
-  
   try {
-    const form = e && e.target ? (e.target.tagName === 'FORM' ? e.target : e.target.closest('form')) : document;
-    
-    const emailInputs = form.querySelectorAll('input[type="email"], input[name="email"], input[id*="mail"], input[placeholder*="mail" i]');
-    const passInputs = form.querySelectorAll('input[type="password"], input[name="password"], input[id*="pass"], input[placeholder*="ass" i]');
-
-    let emailEl = null; let passEl = null;
-    for (let el of emailInputs) { if (el.offsetParent !== null) { emailEl = el; break; } }
-    for (let el of passInputs) { if (el.offsetParent !== null) { passEl = el; break; } }
-    if (!emailEl && emailInputs.length > 0) emailEl = emailInputs[0];
-    if (!passEl && passInputs.length > 0) passEl = passInputs[0];
-
-    if (!emailEl || !passEl) return;
-
-    const email = emailEl.value.trim();
-    const password = passEl.value;
-
-    if (typeof sb === 'undefined') return;
-
-    // Tembak ke Supabase
+    const email = document.getElementById("admin-email").value.trim();
+    const password = document.getElementById("admin-password").value;
     const { data, error } = await sb.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      if (typeof toast === 'function') toast("Login gagal: " + error.message);
-      else alert("Login gagal: " + error.message);
-      return;
-    }
-
-    // Sukses
+    if (error) { alert("❌ Login Gagal: " + error.message); return; }
+    
     sessionStorage.setItem("gh_admin", "true");
     document.body.classList.add("admin-mode");
-    if (typeof closeModal === 'function') closeModal("modal-admin-login");
-    if (typeof openAdmin === 'function') openAdmin();
-    if (typeof toast === 'function') toast("Login Berhasil, Bos!");
+    closeModal("modal-admin-login");
+    openAdmin();
+    alert("✅ Login Sukses, Bos!");
+    resetIdleTimer(); // Mulai timer auto-logout
+  } catch (err) { alert("Sistem Error: " + err.message); }
+};
 
-  } catch (err) {
-    alert("Sistem Error: " + err.message);
+window.adminLogout = async function() {
+  await sb.auth.signOut();
+  sessionStorage.removeItem("gh_admin");
+  closeModal('modal-admin'); 
+  closeModal('modal-admin-login');
+  document.body.classList.remove('admin-mode');
+  location.hash='';
+  location.reload(); // Refresh biar bersih
+};
+
+// --- 2. AUTO-LOGOUT 15 MENIT (IDLE TIMER) ---
+let idleTimer;
+function resetIdleTimer() {
+  clearTimeout(idleTimer);
+  if(sessionStorage.getItem("gh_admin") === "true") {
+    idleTimer = setTimeout(() => {
+      alert("Sesi Admin berakhir karena tidak ada aktivitas selama 15 menit.");
+      adminLogout();
+    }, 15 * 60 * 1000); // 15 Menit
   }
+}
+// Pantau aktivitas user (klik, gerak, ketik)
+['mousemove', 'keydown', 'click', 'touchstart'].forEach(evt => {
+  document.addEventListener(evt, resetIdleTimer, { passive: true });
+});
+
+// --- 3. FIX BANNER (Tambah & Hapus) ---
+window.loadAdminBanners = async function() {
+  const box = document.getElementById('admin-tab-content');
+  box.innerHTML = '<h3>Manajemen Banner</h3><p class="muted">Memuat...</p>';
+  const { data, error } = await sb.from('banners').select('*').order('sort_order');
+  if (error) { box.innerHTML = '<p style="color:red">Gagal memuat: ' + error.message + '</p>'; return; }
+
+  box.innerHTML = `
+    <h3>Manajemen Banner</h3>
+    <div class="glass panel" style="margin:14px 0">
+      <h4>Tambah Banner</h4>
+      <input id="banner-new-title" class="field" placeholder="Judul (Opsional)">
+      <input id="banner-new-url" class="field" type="url" placeholder="Link Gambar (Wajib: https://...)">
+      <input id="banner-new-order" class="field" type="number" value="${(data||[]).length+1}">
+      <label style="margin-top:10px"><input id="banner-new-active" type="checkbox" checked> Aktifkan</label>
+      <button class="btn btn-primary" onclick="addAdminBanner()" style="margin-top:10px">Simpan Banner</button>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Judul</th><th>Gambar</th><th>Urutan</th><th>Status</th><th>Aksi</th></tr></thead>
+      <tbody>${(data||[]).map(b => `
+        <tr>
+          <td>${b.title || '-'}</td>
+          <td><a href="${b.image_url}" target="_blank">Lihat</a></td>
+          <td>${b.sort_order}</td>
+          <td>${b.is_active ? 'Aktif' : 'Mati'}</td>
+          <td><button class="btn" style="background:#ff2040;color:white;padding:4px 8px" onclick="deleteBanner('${b.id}')">Hapus</button></td>
+        </tr>`).join('') || '<tr><td colspan="5">Belum ada banner.</td></tr>'}
+      </tbody>
+    </table></div>`;
+};
+
+window.addAdminBanner = async function() {
+  const title = document.getElementById('banner-new-title')?.value.trim() || '';
+  const image_url = document.getElementById('banner-new-url')?.value.trim() || '';
+  const sort_order = Number(document.getElementById('banner-new-order')?.value || 1);
+  const is_active = !!document.getElementById('banner-new-active')?.checked;
+  
+  if(!image_url) { alert("URL Gambar wajib diisi!"); return; }
+  const payload = { image_url, sort_order, is_active };
+  if(title) payload.title = title;
+
+  const { error } = await sb.from('banners').insert(payload);
+  if (error) alert("❌ GAGAL SIMPAN BANNER:\n" + error.message);
+  else { alert("✅ Banner Berhasil Disimpan!"); loadAdminBanners(); }
+};
+
+window.deleteBanner = async function(id) {
+  if(!confirm("Yakin hapus banner ini?")) return;
+  const { error } = await sb.from('banners').delete().eq('id', id);
+  if (error) alert("Gagal hapus: " + error.message);
+  else { alert("Banner dihapus!"); loadAdminBanners(); }
+};
+
+// --- 4. FIX PRODUK (Tombol Hapus) ---
+window.loadAdminProducts = async function(gameId) {
+  const box = document.getElementById('admin-products');
+  const { data, error } = await sb.from('products').select('*').eq('game_id', gameId).order('sort_order');
+  if(error) { box.innerHTML = 'Error: ' + error.message; return; }
+  
+  box.innerHTML = `
+    <h3>Produk</h3>
+    <button class="btn btn-primary" onclick="adminEditProduct(null,'${gameId}')">Tambah Produk</button>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Nama</th><th>Harga</th><th>Diskon</th><th>Status</th><th>Aksi</th></tr></thead>
+      <tbody>${(data||[]).map(p => `
+        <tr>
+          <td>${p.name}</td>
+          <td>Rp ${p.price.toLocaleString()}</td>
+          <td>${p.discount_price ? 'Rp '+p.discount_price.toLocaleString() : '-'}</td>
+          <td>${p.is_active ? 'Aktif' : 'Mati'}</td>
+          <td>
+            <button class="btn" onclick="adminEditProduct('${p.id}','${gameId}')">Edit</button>
+            <button class="btn" style="background:#ff2040;color:white;" onclick="deleteProduct('${p.id}','${gameId}')">Hapus</button>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+};
+
+window.deleteProduct = async function(id, gameId) {
+  if(!confirm("Yakin hapus produk ini?")) return;
+  const { error } = await sb.from('products').delete().eq('id', id);
+  if(error) alert("Gagal hapus: " + error.message);
+  else { alert("Produk dihapus!"); loadAdminProducts(gameId); }
+};
+
+// --- 5. FIX GAME (Tombol Hapus) ---
+const originalLoadAdminGames = window.loadAdminGames;
+window.loadAdminGames = async function() {
+  await originalLoadAdminGames();
+  setTimeout(() => {
+    document.querySelectorAll('#admin-tab-content table tbody tr').forEach(tr => {
+      if(!tr.querySelector('.btn-hapus-game')) {
+        const editBtn = tr.querySelector('button[onclick*="adminEditGame"]');
+        if(editBtn) {
+          const match = editBtn.getAttribute('onclick').match(/'([^']+)'/);
+          if(match) {
+            const gameId = match[1];
+            const actionTd = tr.lastElementChild;
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-hapus-game';
+            btn.innerText = 'Hapus';
+            btn.style = 'background:#ff2040;color:white;margin-left:5px;';
+            btn.onclick = () => {
+              if(confirm('Hapus game ini? Semua produk di dalamnya mungkin akan error.')) {
+                sb.from('games').delete().eq('id', gameId).then(({error}) => {
+                  if(error) alert('Gagal hapus game: ' + error.message);
+                  else { alert('Game dihapus!'); loadAdminGames(); }
+                });
+              }
+            };
+            actionTd.appendChild(btn);
+          }
+        }
+      }
+    });
+  }, 500);
+};
+
+// --- 6. FIX SIMPAN PENGATURAN (SETTINGS) ---
+window.saveAdminSettings = async function(e) {
+  e.preventDefault();
+  if(!sb) { alert("Supabase belum tersambung!"); return; }
+  
+  const entries = {
+    wa_admin: document.getElementById('set-wa').value.trim(),
+    running_text: document.getElementById('set-running').value,
+    active_web_theme: document.getElementById('set-theme').value,
+    seasonal_theme: document.getElementById('set-season').value,
+    admin_fee_qris: document.getElementById('set-fee').value,
+    qris_image_url: document.getElementById('set-qris').value,
+    store_status: document.getElementById('set-status').value,
+    store_message: document.getElementById('set-message').value,
+    setup_game: document.getElementById('set-setup-game').value,
+    flash_sale_enabled: document.getElementById('set-flash').value,
+    flash_sale_title: document.getElementById('set-flash-title').value,
+    flash_sale_end: document.getElementById('set-flash-end').value ? new Date(document.getElementById('set-flash-end').value).toISOString() : '',
+    bank_name: document.getElementById('set-bank').value,
+    bank_account: document.getElementById('set-bank-account').value,
+    bank_holder: document.getElementById('set-bank-holder').value,
+    ewallet_name: document.getElementById('set-ewallet').value,
+    ewallet_account: document.getElementById('set-ewallet-account').value,
+    qris_enabled: String(document.getElementById('set-qris-enabled').checked),
+    bank_enabled: String(document.getElementById('set-bank-enabled').checked),
+    ewallet_enabled: String(document.getElementById('set-ewallet-enabled').checked),
+    coming_soon_open: String(document.getElementById('set-coming').checked),
+    point_event_active: String(document.getElementById('set-points').checked)
+  };
+
+  for(const [key, value] of Object.entries(entries)){
+    const { error } = await sb.from('settings').upsert({ key: key, value: String(value) }, { onConflict: 'key' });
+    if(error) { 
+      alert("❌ GAGAL SIMPAN PENGATURAN:\n" + error.message + "\n\nCek izin RLS tabel 'settings'."); 
+      return; 
+    }
+  }
+  alert("✅ Pengaturan Berhasil Disimpan!");
+  setTimeout(() => location.reload(), 1000); 
 };
 </script>
 </script>
