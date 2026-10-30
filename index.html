@@ -423,49 +423,38 @@ document.addEventListener('DOMContentLoaded',async()=>{initGraphicsQuality();doc
 
 </script>
 <script>
- // --- HIJACK FORM LOGIN LAMA ---
-setTimeout(() => {
-  const emailInput = document.getElementById("adminEmail");
-  const passInput = document.getElementById("adminPassword");
-  
-  if (emailInput && passInput) {
-    // Cari form pembungkusnya
-    const form = emailInput.closest("form");
-    
-    if (form) {
-      // Timpa paksa fungsi submit-nya
-      form.onsubmit = async function(e) {
-        e.preventDefault(); // Tahan form biar gak reload
-        
-        const email = emailInput.value.trim();
-        const password = passInput.value;
-        
-        const btn = form.querySelector('button[type="submit"]');
-        if (btn) btn.disabled = true;
+// --- PAKSA GANTI FUNGSI LOGIN ---
+alert("Kode baru berhasil dimuat!"); // Jebakan 1: Cek apakah kode ini jalan
 
-        // Tembak ke Supabase
-        const { data, error } = await sb.auth.signInWithPassword({
-          email: email,
-          password: password
-        });
+window.adminLogin = async function(e) {
+  if(e) e.preventDefault();
+  alert("Fungsi adminLogin baru berjalan!"); // Jebakan 2: Cek apakah tombol manggil fungsi ini
 
-        if (btn) btn.disabled = false;
+  const email = document.getElementById("adminEmail").value.trim();
+  const password = document.getElementById("adminPassword").value;
 
-        if (error) {
-          alert("Login gagal: " + error.message);
-          return;
-        }
-
-        // Kalau sukses
-        sessionStorage.setItem("gh_admin", "true");
-        document.body.classList.add("admin-mode");
-        if (typeof closeModal === 'function') closeModal("modal-admin-login");
-        if (typeof openAdmin === 'function') openAdmin();
-        alert("Login Berhasil, Bos!");
-      };
-    }
+  // Coba tembak pakai variabel sb
+  if (typeof sb === 'undefined') {
+    alert("❌ FATAL: Variabel 'sb' gak ada! Cek Tes 1 bro.");
+    return;
   }
-}, 1000); // Tunggu 1 detik biar web selesai loading
+
+  const { data, error } = await sb.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
+
+  if (error) {
+    alert("❌ Login Gagal: " + error.message);
+    return;
+  }
+
+  alert("✅ Login Sukses Bos!");
+  sessionStorage.setItem("gh_admin", "true");
+  document.body.classList.add("admin-mode");
+  if (typeof closeModal === 'function') closeModal("modal-admin-login");
+  if (typeof openAdmin === 'function') openAdmin();
+};
 </script>
 </body>
 </html>
