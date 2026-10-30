@@ -630,7 +630,131 @@ window.saveAdminSettings = async function(e) {
   alert("✅ Pengaturan Berhasil Disimpan!");
   setTimeout(() => location.reload(), 1000); 
 };
-</script>
+ <style>
+  .floaters .float-btn:first-child { display: none !important; }
+  #gh-chat-btn {
+    position: fixed; right: 14px; bottom: 150px; z-index: 9999;
+    width: 55px; height: 55px; border-radius: 50%;
+    background: var(--accent); color: #000;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: transform 0.2s;
+  }
+  #gh-chat-btn:hover { transform: scale(1.05); }
+  #gh-chat-box {
+    position: fixed; right: 14px; bottom: 215px; z-index: 10000;
+    width: min(350px, calc(100vw - 28px)); height: 450px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 16px;
+    display: none; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    overflow: hidden; font-family: Poppins, sans-serif;
+  }
+  #gh-chat-box.open { display: flex; }
+  .gh-chat-header {
+    background: var(--panel2); padding: 15px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .gh-chat-header h3 { margin: 0; font-size: 14px; color: var(--text); }
+  .gh-chat-header span { cursor: pointer; color: var(--muted); font-size: 20px; }
+  .gh-chat-messages {
+    flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+    background: var(--bg);
+  }
+  .gh-msg { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 12px; line-height: 1.4; }
+  .gh-msg.bot { background: var(--panel2); color: var(--text); align-self: flex-start; border-bottom-left-radius: 2px; }
+  .gh-msg.user { background: var(--accent); color: #000; align-self: flex-end; border-bottom-right-radius: 2px; }
+  .gh-msg.admin { background: #28a745; color: white; align-self: flex-start; border-bottom-left-radius: 2px; }
+  .gh-chat-input {
+    padding: 10px; border-top: 1px solid var(--border); display: flex; gap: 8px; background: var(--panel);
+  }
+  .gh-chat-input input {
+    flex: 1; padding: 10px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text); outline: none; font-size: 12px;
+  }
+  .gh-chat-input button {
+    background: var(--accent); color: #000; border: none; border-radius: 50%;
+    width: 40px; height: 40px; cursor: pointer; font-size: 16px;
+  }
+  .gh-wa-btn {
+    display: block; text-align: center; font-size: 10px; color: var(--muted);
+    margin-top: 5px; text-decoration: underline; cursor: pointer;
+  }
+</style>
+
+<div id="gh-chat-btn" onclick="toggleChat()">
+  <i class="fa-solid fa-comments"></i>
+</div>
+
+<div id="gh-chat-box">
+  <div class="gh-chat-header">
+    <h3>💬 CS GH TopUp</h3>
+    <span onclick="toggleChat()">×</span>
+  </div>
+  <div class="gh-chat-messages" id="gh-chat-messages">
+    <div class="gh-msg bot">Halo kak! 👋 Ada yang bisa CS bantu? Silakan ketik pertanyaanmu di bawah.</div>
+    <div style="text-align:center; margin-top:10px;">
+      <a href="https://wa.me/6283848591646?text=Halo%20Admin%20GH%20TopUp" target="_blank" class="gh-wa-btn">Atau chat via WhatsApp</a>
+    </div>
+  </div>
+  <div class="gh-chat-input">
+    <input type="text" id="gh-chat-input-field" placeholder="Ketik pesan..." onkeypress="if(event.key === 'Enter') sendChatMsg()">
+    <button onclick="sendChatMsg()"><i class="fa-solid fa-paper-plane"></i></button>
+  </div>
+</div>
+
+<script>
+let chatSessionId = localStorage.getItem('gh_chat_session');
+if (!chatSessionId) {
+  chatSessionId = 'SESS-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+  localStorage.setItem('gh_chat_session', chatSessionId);
+}
+
+function toggleChat() {
+  const box = document.getElementById('gh-chat-box');
+  box.classList.toggle('open');
+  if (box.classList.contains('open')) {
+    document.getElementById('gh-chat-messages').scrollTop = 99999;
+  }
+}
+
+async function sendChatMsg() {
+  const input = document.getElementById('gh-chat-input-field');
+  const msg = input.value.trim();
+  if (!msg) return;
+  appendChatMsg('user', msg);
+  input.value = '';
+  if (typeof sb !== 'undefined' && sb) {
+    await sb.from('chats').insert([{
+      session_id: chatSessionId,
+      sender: 'buyer',
+      message: msg
+    }]);
+  }
+}
+
+function appendChatMsg(sender, text) {
+  const box = document.getElementById('gh-chat-messages');
+  const div = document.createElement('div');
+  div.className = 'gh-msg ' + sender;
+  div.innerText = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+if (typeof sb !== 'undefined' && sb) {
+  sb.channel('gh-live-chat')
+    .on('postgres_changes', { 
+      event: 'INSERT', 
+      schema: 'public', 
+      table: 'chats',
+      filter: `session_id=eq.${chatSessionId}` 
+    }, payload => {
+      const newMsg = payload.new;
+      if (newMsg.sender === 'admin') {
+        appendChatMsg('admin', newMsg.message);
+      }
+    })
+    .subscribe();
+}
 </script>
 </body>
 </html>
