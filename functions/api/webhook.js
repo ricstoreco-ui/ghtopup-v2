@@ -5,72 +5,95 @@ export async function onRequestPost(context) {
     const body = await request.json();
     
     // ==========================================
-    // BAGIAN 1: NANGKEP PESAN DARI TELEGRAM (Callback / Balasan Admin)
+    // BAGIAN 1: NANGKEP PESAN DARI TELEGRAM (Admin / CS)
     // ==========================================
-    if (body.callback_query || (body.message && !body.table)) {
+    if (body.update_id) {
       const botToken = env.TELEGRAM_BOT_TOKEN;
-      const supabaseUrl = env.SUPABASE_URL;
-      const supabaseKey = env.SUPABASE_SERVICE_KEY;
+      const chatIdAdmin = env.TELEGRAM_CHAT_ID;
 
-      // A. Kalau Admin klik tombol "Sukses/Gagal" di pesan order
-      if (body.callback_query) {
-        const data = body.callback_query.data; // format: "status|invoice"
-        const [status, invoice] = data.split('|');
-        
-        await fetch(`${supabaseUrl}/rest/v1/orders?invoice=eq.${invoice}`, {
-          method: 'PATCH',
-          headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: status })
-        });
-
-        // Jawab callback biar loading di Telegram ilang
-        await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ callback_query_id: body.callback_query.id, text: `Status diubah ke ${status}` })
-        });
-      }
-
-      // B. Kalau Admin ngetik pesan biasa di Telegram (buat bales Live Chat)
       if (body.message && body.message.text) {
         const text = body.message.text;
-        // Cek format: /balas SESS-XXXX pesan
-        if (text.startsWith('/balas ')) {
-          const parts = text.split(' ');
-          const sessionId = parts[1];
-          const replyMsg = parts.slice(2).join(' ');
-
-          // Simpan balasan ke database biar muncul di web
-          await fetch(`${supabaseUrl}/rest/v1/chats`, {
-            method: 'POST',
-            headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ session_id: sessionId, sender: 'admin', message: replyMsg })
-          });
+        const fromId = body.message.from.id;
+        
+        // --- LOGIKA BOT ADMIN ---
+        if (String(fromId) === String(chatIdAdmin)) {
+          if (text === '/menu' || text === '/start') {
+            const keyboard = {
+              inline_keyboard: [
+                [{ text: "📊 Laporan & Omzet", callback_data: "menu_omzet" }, { text: "🎫 Cek Invoice", callback_data: "menu_invoice" }],
+                [{ text: "⚙️ Atur Web", callback_data: "menu_web" }, { text: "🔒 Status Toko", callback_data: "menu_toko" }]
+              ]
+            };
+            await sendTelegram(botToken, chatIdAdmin, "🤖 *PUSAT KENDALI GH TOPUP*\nMau ngapain hari ini, Bos?", keyboard);
+          }
+          else if (text.startsWith('/balas ')) {
+            const parts = text.split(' ');
+            const sessionId = parts[1];
+            const replyMsg = parts.slice(2).join(' ');
+            
+            // Simpan balasan Admin ke database (biar muncul di web buyer)
+            await fetch(`${env.SUPABASE_URL}/rest/v1/chats`, {
+              method: 'POST',
+              headers: { 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ session_id: sessionId, sender: 'admin', message: replyMsg })
+            });
+            await sendTelegram(botToken, chatIdAdmin, `✅ Balasan terkirim ke sesi ${sessionId}`);
+          }
         }
       }
       return new Response('OK', { status: 200 });
     }
 
     // ==========================================
-    // BAGIAN 2: NANGKEP NOTIFIKASI DARI SUPABASE (Order Baru / Chat Baru)
+    // BAGIAN 2: NANGKEP CHAT BARU DARI WEB (SUPABASE WEBHOOK)
     // ==========================================
     if (body.table === 'chats' && body.type === 'INSERT') {
-      // Kalau ada chat baru dari web, kirim ke Telegram lu
       const chat = body.record;
-      const msg = `💬 *CHAT BARU DARI BUYER*\n\nPesan: ${chat.message}\n\n_Balas dengan:_ \n/balas ${chat.session_id} [pesan lu]`;
       
-      await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text: msg, parse_mode: 'Markdown' })
-      });
-    }
+      // Jangan balas kalau yang masuk itu pesan dari admin atau bot sendiri
+      if (chat.sender !== 'buyer') return new Response('OK', { status: 200 });
 
-    if (body.table === 'orders' && body.type === 'INSERT') {
-      // Notif orderan baru (bisa lu kembangkan nanti)
-      // ... (logika notif order dari webhook lama lu) ...
+      // --- LOGIKA AUTO-REPLY BOT CS ---
+      let autoReply = null;
+      const msgLower = chat.message.toLowerCase();
+
+      if (msgLower.includes('harga') || msgLower.includes('pricelist')) {
+        autoReply = "Untuk cek harga terbaru, silakan lihat langsung di menu utama website kami ya kak. Harganya paling murah! 😉";
+      } else if (msgLower.includes('invoice') || msgLower.includes('pesanan')) {
+        autoReply = "Untuk cek status pesanan, silakan ketik invoice kamu (contoh: GH-123456) di menu Riwayat website ya kak.";
+      } else if (msgLower.includes('bayar') || msgLower.includes('qris')) {
+        autoReply = "Pembayaran utama kami menggunakan QRIS otomatis (GoPay, OVO, Dana, M-Banking). Prosesnya instan kurang dari 2 menit!";
+      } else if (msgLower.includes('admin') || msgLower.includes('manusia')) {
+        autoReply = "Mohon tunggu sebentar ya kak, pesan kamu sudah diteruskan ke Admin manusia kami. 👨‍💻";
+      } else {
+        autoReply = "Halo kak! Terima kasih sudah menghubungi GH TopUp. Jika butuh bantuan spesifik, Admin kami akan segera membalas pesan ini. Mohon tunggu ya! 🙏";
+      }
+
+      // 1. Simpan balasan Bot ke database (biar muncul di web pembeli)
+      await fetch(`${env.SUPABASE_URL}/rest/v1/chats`, {
+        method: 'POST',
+        headers: { 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: chat.session_id, sender: 'bot', message: autoReply })
+      });
+
+      // 2. Kirim notif ke Bot Admin
+      const notifMsg = `💬 *CHAT BARU DARI BUYER*\n\nPesan: ${chat.message}\n\n_Balas dengan:_ \n/balas ${chat.session_id} [pesan lu]`;
+      await sendTelegram(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, notifMsg);
     }
 
     return new Response('OK', { status: 200 });
   } catch (err) {
     return new Response('Error: ' + err.message, { status: 500 });
   }
+}
+
+async function sendTelegram(token, chatId, text, keyboard = null) {
+  const payload = { chat_id: chatId, text: text, parse_mode: 'Markdown' };
+  if (keyboard) payload.reply_markup = keyboard;
+  
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
 }
