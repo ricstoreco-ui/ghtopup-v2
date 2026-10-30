@@ -1176,6 +1176,34 @@ window.openAdmin = async function() { await _oa(); if (sessionStorage.getItem('g
 })();
  </script>
  <style>
+  /* Paksa tampilin tombol CS, kalahin semua aturan CSS lain */
+  #btn-cs-final, .gh-chat-fab {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background: #00a0ff !important;
+    color: #ffffff !important;
+  }
+ </style>
+<script>
+  // PENGAMAN: Kalau tombol CS belum ada, kita bikin paksa
+  setTimeout(function() {
+    const floaters = document.querySelector('.floaters');
+    if (!floaters) return;
+    let fab = floaters.querySelector('.gh-chat-fab');
+    if (!fab) {
+      fab = document.createElement('button');
+      fab.id = 'btn-cs-final';
+      fab.className = 'float-btn gh-chat-fab';
+      fab.innerHTML = '<i class="fa-solid fa-comments"></i>';
+      fab.onclick = function() {
+        if (typeof toggleChat === 'function') toggleChat();
+      };
+      floaters.insertBefore(fab, floaters.firstChild);
+    }
+  }, 2000);
+</script>
+ <style>
   .floaters button:nth-child(1) { display: none !important; }
 </style>
 </body>
