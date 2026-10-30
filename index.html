@@ -755,16 +755,6 @@ if (typeof sb !== 'undefined' && sb) {
     })
     .subscribe();
 }
- <style>
-  /* Target paksa tombol pertama di dalam class .floaters */
-  .floaters > button:nth-child(1) {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    width: 0 !important;
-    height: 0 !important;
-    pointer-events: none !important;
-}
 <script>
   // Hapus elemen secara fisik dari HTML setelah halaman dimuat
   document.addEventListener('DOMContentLoaded', () => {
@@ -778,6 +768,7 @@ if (typeof sb !== 'undefined' && sb) {
       }
     }, 500); // Cek terus-terusan tiap 0.5 detik
   });
+ 
 </script>
 </body>
 </html>
