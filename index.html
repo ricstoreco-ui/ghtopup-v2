@@ -1276,53 +1276,73 @@ document.addEventListener('DOMContentLoaded', function() {
   }, 1000); // Cek tiap detik
 });
 </script>
- <script>
-// Script Penyelamat Tombol (CS, Referral, Spin)
-setInterval(function() {
-  const floaters = document.querySelector('.floaters');
-  if (!floaters) return;
-
-  // 1. Bersihkan semua tombol lama (Biar WA gak balik lagi)
-  floaters.innerHTML = '';
-
-  // 2. Tombol CS (Warna Biru)
-  if (!document.getElementById('btn-cs-sultan')) {
-    const csBtn = document.createElement('button');
-    csBtn.id = 'btn-cs-sultan';
-    csBtn.className = 'float-btn';
-    csBtn.innerHTML = '<i class="fa-solid fa-comments"></i>';
-    csBtn.style.cssText = 'background: #00a0ff; color: #fff; display: flex; align-items: center; justify-content: center;';
-    csBtn.onclick = function() { 
-      if (typeof window.toggleChatCS === 'function') window.toggleChatCS(); 
-    };
-    floaters.appendChild(csBtn);
+<style>
+  /* Wadah baru khusus buat 3 tombol, biar gak diganggu kode lama */
+  #gh-mega-floaters {
+    position: fixed;
+    right: 14px;
+    bottom: 92px;
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
-
-  // 3. Tombol Referral (Ikon Kado)
-  if (!document.getElementById('btn-ref-sultan')) {
-    const refBtn = document.createElement('button');
-    refBtn.id = 'btn-ref-sultan';
-    refBtn.className = 'float-btn';
-    refBtn.innerHTML = '<i class="fa-solid fa-gift"></i>';
-    refBtn.onclick = function() { 
-      if (typeof openReferral === 'function') openReferral(); 
-    };
-    floaters.appendChild(refBtn);
+  
+  /* Styling tombol */
+  .gh-mega-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: transform 0.2s;
   }
+  .gh-mega-btn:hover { transform: scale(1.1); }
+  
+  /* Warna spesifik */
+  #mega-cs { background: #00a0ff; color: white; }
+  #mega-ref { background: var(--panel2, #333); color: var(--accent, #fff); }
+  #mega-spin { background: var(--panel2, #333); color: var(--accent, #fff); }
+</style>
 
-  // 4. Tombol Spin (Ikon Roda)
-  if (!document.getElementById('btn-spin-sultan')) {
-    const spinBtn = document.createElement('button');
-    spinBtn.id = 'btn-spin-sultan';
-    spinBtn.className = 'float-btn';
-    spinBtn.innerHTML = '<i class="fa-solid fa-dharmachakra"></i>';
-    spinBtn.onclick = function() { 
-      if (typeof openSpin === 'function') openSpin(); 
-    };
-    floaters.appendChild(spinBtn);
-  }
+<div id="gh-mega-floaters" style="display: none;">
+  <button class="gh-mega-btn" id="mega-cs" onclick="window.toggleChatCS()">
+    <i class="fa-solid fa-comments"></i>
+  </button>
+  <button class="gh-mega-btn" id="mega-ref" onclick="window.handleReferral()">
+    <i class="fa-solid fa-gift"></i>
+  </button>
+  <button class="gh-mega-btn" id="mega-spin" onclick="window.handleSpin()">
+    <i class="fa-solid fa-dharmachakra"></i>
+  </button>
+</div>
 
-}, 1000); // Cek tiap detik biar gak bisa dihapus sama kode lama
+<script>
+// Fungsi Pengaman kalau fungsi asli hilang
+window.handleReferral = function() {
+  if (typeof openReferral === 'function') openReferral();
+  else alert('Fitur Referral sedang maintenance.');
+};
+
+window.handleSpin = function() {
+  if (typeof openSpin === 'function') openSpin();
+  else alert('Fitur Spin Gacha sedang maintenance.');
+};
+
+// Tampilkan wadah tombol kita setelah 2 detik (biar web selesai loading)
+setTimeout(function() {
+  const mega = document.getElementById('gh-mega-floaters');
+  if (mega) mega.style.display = 'flex';
+  
+  // Sembunyiin paksa wadah lama (.floaters) biar gak dobel
+  const oldFloaters = document.querySelector('.floaters');
+  if (oldFloaters) oldFloaters.style.display = 'none';
+}, 2000);
 </script>
 </script>
 </body>
