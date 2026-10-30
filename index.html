@@ -420,38 +420,7 @@ document.addEventListener('pointerdown',function(e){
 },{passive:true});
 
 document.addEventListener('DOMContentLoaded',async()=>{initGraphicsQuality();document.getElementById('year').textContent=new Date().getFullYear();applyWebTheme(localStorage.getItem('gh_web_theme')||'chrome');if(localStorage.getItem('gh_light')==='true')document.body.classList.add('light');const hashAdmin=location.hash==='#admin'||sessionStorage.getItem('gh_admin')==='true';if(hashAdmin)document.body.classList.add('admin-mode');let introSeen=false;try{introSeen=sessionStorage.getItem('gh_intro_seen')==='1'}catch(e){}if(hashAdmin||introSeen)hideGhIntro();else setTimeout(hideGhIntro,4600);if(hashAdmin){document.getElementById('store-status-notice')?.remove();clearInterval(window.ghMaintenanceTimer);}await loadStoreStatus();await Promise.all([loadGames(),loadBanners(),loadReviews()]);renderPage();if(hashAdmin)adminRoute();window.addEventListener('hashchange',()=>{if(location.hash==='#admin')adminRoute();else if(sessionStorage.getItem('gh_admin')!=='true'){document.body.classList.remove('admin-mode');showStoreStatusNotice()}});if(sb){const channel=sb.channel('gh-orders-realtime').on('postgres_changes',{event:'*',schema:'public',table:'orders'},()=>{if(sessionStorage.getItem('gh_admin')==='true'&&state.page==='admin')toast('Data pesanan berubah.');}).subscribe();window.ghRealtime=channel} });
-<script>
-// --- TIMPA FUNGSI LOGIN LAMA DENGAN SUPABASE AUTH ---
-window.adminLogin = async function(e) {
-  if(e) e.preventDefault();
-  const email = document.getElementById("adminEmail").value.trim();
-  const password = document.getElementById("adminPassword").value;
-  
-  const btn = e ? e.target.querySelector('button[type="submit"]') : null;
-  if (btn) btn.disabled = true;
 
-  // Panggil Supabase Auth
-  const { data, error } = await sb.auth.signInWithPassword({
-    email: email,
-    password: password
-  });
-
-  if (btn) btn.disabled = false;
-
-  if (error) {
-    // Munculin pesan error kalau gagal
-    alert("Login gagal: " + error.message);
-    return;
-  }
-
-  // Kalau sukses
-  sessionStorage.setItem("gh_admin", "true");
-  document.body.classList.add("admin-mode");
-  if (typeof closeModal === 'function') closeModal("modal-admin-login");
-  if (typeof openAdmin === 'function') openAdmin();
-  alert("Login Berhasil, Bos!");
-};
-</script>
 </script>
 </body>
 </html>
