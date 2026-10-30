@@ -1336,5 +1336,37 @@ document.addEventListener('DOMContentLoaded', function() {
     oldFloaters.forEach(el => el.remove());
   }, 500);
 </script>
+ <style>
+  /* 1. SEMBUNYIIN PAKSA TOMBOL DARI CLOUD AI (Yang bikin dobel) */
+  #btn-cs-final, 
+  .gh-chat-fab, 
+  .floaters { 
+    display: none !important; 
+    visibility: hidden !important; 
+    opacity: 0 !important; 
+  }
+
+  /* 2. MUNCULIN WADAH TOMBOL KITA (Yang 3 biji itu) */
+  #gh-ultimate-float {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: fixed !important;
+    right: 16px !important;
+    bottom: 85px !important;
+    z-index: 99999999 !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  /* 3. PASTIIN TOMBOL KADO (REFERRAL) MUNCUL & WARNA MERAH */
+  #gh-ultimate-float .gh-btn-ref {
+    display: flex !important;
+    visibility: visible !important;
+    background: #ff4b59 !important; /* Warna Merah */
+    color: white !important;
+  }
+</style>
+</script>
 </body>
 </html>
