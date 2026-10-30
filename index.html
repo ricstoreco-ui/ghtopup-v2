@@ -1206,5 +1206,30 @@ window.openAdmin = async function() { await _oa(); if (sessionStorage.getItem('g
  <style>
   .floaters button:nth-child(1) { display: none !important; }
 </style>
+ <script>
+// Tunggu 3 detik biar web selesai loading
+setTimeout(function() {
+    const floaters = document.querySelector('.floaters');
+    if (!floaters) return;
+
+    // 1. Hapus tombol CS lama kalau ada (biar gak dobel)
+    floaters.querySelectorAll('#btn-cs-final, .gh-chat-fab').forEach(el => el.remove());
+
+    // 2. Bikin tombol baru
+    const fab = document.createElement('button');
+    fab.id = 'btn-cs-final';
+    fab.innerHTML = '<i class="fa-solid fa-comments"></i>';
+    fab.onclick = function() { 
+        if (typeof toggleChat === 'function') toggleChat(); 
+        else alert('Fitur chat belum siap.'); 
+    };
+    
+    // 3. PAKSA TAMPIL DENGAN INLINE STYLE (Gak bisa dikalahin CSS!)
+    fab.style.cssText = "display: flex !important; visibility: visible !important; opacity: 1 !important; background: #00a0ff !important; color: white !important; margin-bottom: 10px !important; z-index: 99999 !important; position: relative !important; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); font-size: 20px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,160,255,0.4);";
+
+    // 4. Taruh di PALING BAWAH tumpukan (biar gak kena aturan tombol pertama)
+    floaters.appendChild(fab);
+}, 3000);
+</script>
 </body>
 </html>
