@@ -1277,73 +1277,64 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 <style>
-  /* Wadah baru khusus buat 3 tombol, biar gak diganggu kode lama */
-  #gh-mega-floaters {
-    position: fixed;
-    right: 14px;
-    bottom: 92px;
-    z-index: 999999;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  /* 1. BUNUH SEMUA TOMBOL LAMA DARI LAYAR */
+  .floaters { 
+    display: none !important; 
+    visibility: hidden !important; 
+    opacity: 0 !important; 
   }
   
-  /* Styling tombol */
-  .gh-mega-btn {
-    width: 50px;
-    height: 50px;
+  /* 2. BIKIN WADAH BARU YANG KEBAL SEGALA GALAU */
+  #gh-ultimate-float {
+    position: fixed;
+    right: 16px;
+    bottom: 80px;
+    z-index: 9999999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  /* 3. STYLING TOMBOL BARU */
+  .gh-btn-ult {
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     border: 2px solid rgba(255,255,255,0.2);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 22px;
+    color: #fff;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     transition: transform 0.2s;
   }
-  .gh-mega-btn:hover { transform: scale(1.1); }
+  .gh-btn-ult:active { transform: scale(0.9); }
   
-  /* Warna spesifik */
-  #mega-cs { background: #00a0ff; color: white; }
-  #mega-ref { background: var(--panel2, #333); color: var(--accent, #fff); }
-  #mega-spin { background: var(--panel2, #333); color: var(--accent, #fff); }
+  .gh-btn-cs { background: #00a0ff; }
+  .gh-btn-ref { background: #ff4b59; }
+  .gh-btn-spin { background: #36d995; }
 </style>
 
-<div id="gh-mega-floaters" style="display: none;">
-  <button class="gh-mega-btn" id="mega-cs" onclick="window.toggleChatCS()">
+<div id="gh-ultimate-float">
+  <button class="gh-btn-ult gh-btn-cs" onclick="window.toggleChatCS ? window.toggleChatCS() : alert('Chat error, muat ulang halaman.')">
     <i class="fa-solid fa-comments"></i>
   </button>
-  <button class="gh-mega-btn" id="mega-ref" onclick="window.handleReferral()">
+  <button class="gh-btn-ult gh-btn-ref" onclick="openReferral ? openReferral() : alert('Fitur Referral belum siap.')">
     <i class="fa-solid fa-gift"></i>
   </button>
-  <button class="gh-mega-btn" id="mega-spin" onclick="window.handleSpin()">
+  <button class="gh-btn-ult gh-btn-spin" onclick="openSpin ? openSpin() : alert('Fitur Spin belum siap.')">
     <i class="fa-solid fa-dharmachakra"></i>
   </button>
 </div>
 
 <script>
-// Fungsi Pengaman kalau fungsi asli hilang
-window.handleReferral = function() {
-  if (typeof openReferral === 'function') openReferral();
-  else alert('Fitur Referral sedang maintenance.');
-};
-
-window.handleSpin = function() {
-  if (typeof openSpin === 'function') openSpin();
-  else alert('Fitur Spin Gacha sedang maintenance.');
-};
-
-// Tampilkan wadah tombol kita setelah 2 detik (biar web selesai loading)
-setTimeout(function() {
-  const mega = document.getElementById('gh-mega-floaters');
-  if (mega) mega.style.display = 'flex';
-  
-  // Sembunyiin paksa wadah lama (.floaters) biar gak dobel
-  const oldFloaters = document.querySelector('.floaters');
-  if (oldFloaters) oldFloaters.style.display = 'none';
-}, 2000);
-</script>
+  // Hapus fisik elemen .floaters lama tiap 500ms biar Cloud AI gak bisa balikin
+  setInterval(function() {
+    const oldFloaters = document.querySelectorAll('.floaters');
+    oldFloaters.forEach(el => el.remove());
+  }, 500);
 </script>
 </body>
 </html>
