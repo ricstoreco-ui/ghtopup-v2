@@ -423,69 +423,50 @@ document.addEventListener('DOMContentLoaded',async()=>{initGraphicsQuality();doc
 
 </script>
 <script>
-// --- JARING PENGAMAN LOGIN V2 (AUTO DETEKSI KOLOM) ---
+// --- LOGIN ADMIN SUPABASE (VERSI BERSIH) ---
 window.adminLogin = async function(e) {
   if(e) e.preventDefault();
   
   try {
-    // 1. Cari form pembungkusnya dulu
     const form = e && e.target ? (e.target.tagName === 'FORM' ? e.target : e.target.closest('form')) : document;
     
-    // 2. Cari kolom input secara otomatis (berdasarkan tipe atau ID lama)
-    const emailEl = form.querySelector('input[type="email"]') || 
-                    form.querySelector('input[name="email"]') || 
-                    document.getElementById("adminEmail") || 
-                    form.querySelector('input[placeholder*="mail" i]'); // Cari yg ada tulisan email
+    const emailInputs = form.querySelectorAll('input[type="email"], input[name="email"], input[id*="mail"], input[placeholder*="mail" i]');
+    const passInputs = form.querySelectorAll('input[type="password"], input[name="password"], input[id*="pass"], input[placeholder*="ass" i]');
 
-    const passEl = form.querySelector('input[type="password"]') || 
-                   form.querySelector('input[name="password"]') || 
-                   document.getElementById("adminPassword") || 
-                   form.querySelector('input[placeholder*="ass" i]'); // Cari yg ada tulisan pass
+    let emailEl = null; let passEl = null;
+    for (let el of emailInputs) { if (el.offsetParent !== null) { emailEl = el; break; } }
+    for (let el of passInputs) { if (el.offsetParent !== null) { passEl = el; break; } }
+    if (!emailEl && emailInputs.length > 0) emailEl = emailInputs[0];
+    if (!passEl && passInputs.length > 0) passEl = passInputs[0];
 
-    if (!emailEl || !passEl) {
-      alert("❌ Masih gagal nemu kolom email/password. Coba cek form login lu.");
-      return;
-    }
+    if (!emailEl || !passEl) return;
 
     const email = emailEl.value.trim();
     const password = passEl.value;
 
-    if (typeof sb === 'undefined') {
-      alert("❌ FATAL: Variabel 'sb' (Supabase) gak ada!");
-      return;
-    }
+    if (typeof sb === 'undefined') return;
 
-    alert("⏳ Menghubungi Supabase dengan email: " + email); 
-
-    // 3. Tembak Supabase
-    let hasilLogin;
-    if (sb.auth.signInWithPassword) {
-      hasilLogin = await sb.auth.signInWithPassword({ email, password });
-    } else if (sb.auth.signIn) {
-      hasilLogin = await sb.auth.signIn({ email, password });
-    } else {
-      alert("❌ ERROR: Fungsi login Supabase gak dikenali!");
-      return;
-    }
-
-    const { data, error } = hasilLogin;
+    // Tembak ke Supabase
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
 
     if (error) {
-      alert("❌ LOGIN GAGAL: " + error.message);
+      if (typeof toast === 'function') toast("Login gagal: " + error.message);
+      else alert("Login gagal: " + error.message);
       return;
     }
 
-    // 4. Kalau sukses
-    alert("✅ LOGIN SUKSES BOS!");
+    // Sukses
     sessionStorage.setItem("gh_admin", "true");
     document.body.classList.add("admin-mode");
     if (typeof closeModal === 'function') closeModal("modal-admin-login");
     if (typeof openAdmin === 'function') openAdmin();
-    
+    if (typeof toast === 'function') toast("Login Berhasil, Bos!");
+
   } catch (err) {
-    alert("❌ SYSTEM ERROR: " + err.message);
+    alert("Sistem Error: " + err.message);
   }
 };
+</script>
 </script>
 </body>
 </html>
