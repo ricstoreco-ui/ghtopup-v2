@@ -6,19 +6,31 @@ const TOKO = kb([[{ text: '🟢 Online', callback_data: 'st_online' }, { text: '
 const dur = t => { const m = /(\d+)\s*(mnt|menit|jam|hari)/i.exec(t); return m ? +m[1] * ({ mnt: 6e4, menit: 6e4, jam: 36e5, hari: 864e5 }[m[2].toLowerCase()]) : 0; };
 const rp = n => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
 const THEMES = ['chrome', 'neon', 'cyber', 'ocean', 'gold'];
+const INV = /^GH-[0-9A-Za-z]{4,20}$/;
+const BTN = /^(ok|no)_(GH-[0-9A-Za-z]{4,20})$/;
+
+// Buka https://ghtopup-v2.pages.dev/api/telegram/admin di browser: kalau muncul teks ini, function sudah ter-deploy.
+export const onRequestGet = () => new Response('admin bot aktif');
 
 export async function onRequestPost({ request, env }) {
   if (!env.WEBHOOK_SECRET || request.headers.get('x-telegram-bot-api-secret-token') !== env.WEBHOOK_SECRET) return new Response('forbidden', { status: 403 });
   const u = await request.json().catch(() => ({})), T = env.TELEGRAM_BOT_TOKEN, A = String(env.TELEGRAM_CHAT_ID || '').trim();
-  const say = (text, k) => tg(T, 'sendMessage', { chat_id: A, text, parse_mode: 'HTML', reply_markup: k });
-  const state = async v => setting(env, 'private_tg_state', v);
-  const fromId = String((u.callback_query || u.message)?.from?.id || '');
-  if (fromId !== A) {
-    // Diagnostik: balas ke pengirim dengan ID-nya sendiri (tidak membocorkan ID admin).
-    const cid = u.message?.chat?.id;
-    if (cid) await tg(T, 'sendMessage', { chat_id: cid, text: 'Akses ditolak. ID Telegram kamu: ' + fromId + (A ? '' : '\n(TELEGRAM_CHAT_ID belum terisi di Cloudflare)') });
+  const src = u.callback_query || u.message;
+  if (!src) return new Response('ok');
+  const fromId = String(src.from?.id || '');
+
+  // Pengirim bukan admin: balas dengan ID-nya supaya TELEGRAM_CHAT_ID bisa dicocokkan.
+  if (!A || fromId !== A) {
+    const info = 'Akses ditolak. ID Telegram kamu: ' + fromId;
+    try {
+      if (u.callback_query) await tg(T, 'answerCallbackQuery', { callback_query_id: u.callback_query.id, text: info, show_alert: true });
+      else await tg(T, 'sendMessage', { chat_id: u.message.chat.id, text: info + (A ? '' : '\n(TELEGRAM_CHAT_ID belum diisi di Cloudflare)') });
+    } catch (e) { console.error('admin bot tolak', e.message); }
     return new Response('ok');
   }
+
+  const say = (text, k) => tg(T, 'sendMessage', { chat_id: A, text, parse_mode: 'HTML', reply_markup: k });
+  const state = v => setting(env, 'private_tg_state', v);
   try {
     const cq = u.callback_query;
     if (cq) {
@@ -41,18 +53,21 @@ export async function onRequestPost({ request, env }) {
       else if (d === 'st_closed') { await state('closed'); await say('Ketik pesan untuk pembeli, contoh: Admin sedang solat, kembali 15 menit lagi'); }
       else if (d === 'st_setup') { const g = await db(env, 'games?select=id,name&order=name.asc&limit=30') || []; await say('Pilih game yang disetup:', kb(g.map(x => [{ text: x.name, callback_data: 'sg_' + x.id }]))); }
       else if (d.startsWith('sg_')) { const g = (await db(env, `games?select=name&id=eq.${encodeURIComponent(d.slice(3))}`))?.[0]; if (g) { await setting(env, 'setup_game', g.name); await setting(env, 'store_status', 'setup'); await say('🛠️ Setup: ' + esc(g.name)); } }
-      else if (/^(ok|no)_GH-[0-9A-F]{8}$/.test(d)) {
-        const st = d.startsWith('ok') ? 'success' : 'failed', inv = d.slice(3);
-        const r = await db(env, `orders?invoice=eq.${inv}`, { method: 'PATCH', body: { status: st, updated_at: new Date().toISOString() } });
-        await say(r?.length ? `${st === 'success' ? '✅' : '❌'} <code>${inv}</code> diubah ke ${st}.` : '⚠️ Order tidak ditemukan.');
+      else if (BTN.test(d)) {
+        const m = BTN.exec(d), st = m[1] === 'ok' ? 'success' : 'failed', inv = m[2];
+        const r = await db(env, `orders?invoice=ilike.${inv}`, { method: 'PATCH', body: { status: st, updated_at: new Date().toISOString() } });
+        await say(r?.length ? `${st === 'success' ? '✅' : '❌'} <code>${esc(r[0].invoice || inv)}</code> diubah ke ${st}.` : '⚠️ Order tidak ditemukan atau gagal diubah: ' + esc(inv));
       }
       return new Response('ok');
     }
+
     const t = (u.message?.text || '').trim(); if (!t) return new Response('ok');
-    const [cmd, ...rest] = t.split(/\s+/), arg = rest.join(' ');
+    const [c0, ...rest] = t.split(/\s+/), cmd = c0.split('@')[0].toLowerCase(), arg = rest.join(' ');
     if (cmd === '/start' || cmd === '/menu') await say('🤖 <b>PUSAT KENDALI GH TOPUP</b>\nMau ngapain hari ini, Bos?', MENU);
-    else if (cmd === '/cek') { const o = /^GH-[0-9A-Fa-f]{8}$/.test(arg) ? (await db(env, `orders?invoice=eq.${arg.toUpperCase()}`))?.[0] : null;
-      await say(o ? `🎫 <code>${o.invoice}</code>\n${esc(o.game_name)} - ${esc(o.product_name)}\nUser ID: ${esc(o.game_user_id)} ${esc(o.server_id || '')}\nTotal: ${rp(o.total)}\nMetode: ${esc(o.payment_method || '-')}\nStatus: ${o.status}\nWaktu: ${o.created_at}` : 'Invoice tidak ditemukan. Format: /cek GH-XXXXXXXX', o ? kb([[{ text: '✅ Sukses', callback_data: 'ok_' + o.invoice }, { text: '❌ Gagal', callback_data: 'no_' + o.invoice }]]) : undefined); }
+    else if (cmd === '/cek') {
+      const o = INV.test(arg) ? (await db(env, `orders?invoice=ilike.${arg}`))?.[0] : null;
+      await say(o ? `🎫 <code>${esc(o.invoice)}</code>\n${esc(o.game_name)} - ${esc(o.product_name)}\nUser ID: ${esc(o.game_user_id)} ${esc(o.server_id || '')}\nTotal: ${rp(o.total)}\nMetode: ${esc(o.payment_method || '-')}\nStatus: ${o.status}\nWaktu: ${o.created_at}` : 'Invoice tidak ditemukan. Format: /cek GH-XXXXXXXX', o ? kb([[{ text: '✅ Sukses', callback_data: 'ok_' + o.invoice }, { text: '❌ Gagal', callback_data: 'no_' + o.invoice }]]) : undefined);
+    }
     else if (cmd === '/online') { await setting(env, 'store_status', 'online'); await say('🟢 Toko ONLINE.'); }
     else if (cmd === '/maintenance') { const ms = dur(arg); if (!ms) await say('Contoh: /maintenance 2jam'); else { await setting(env, 'maintenance_ends_at', new Date(Date.now() + ms).toISOString()); await setting(env, 'store_status', 'maintenance'); await say('🚧 Maintenance aktif.'); } }
     else if (cmd === '/closed') { if (!arg) await say('Contoh: /closed Admin solat, kembali 15 menit lagi'); else { await setting(env, 'closed_message', arg.slice(0, 200)); await setting(env, 'store_status', 'closed'); await say('🔴 Toko CLOSED.'); } }
@@ -67,6 +82,9 @@ export async function onRequestPost({ request, env }) {
       else if (s === 'closed') { await setting(env, 'closed_message', t.slice(0, 200)); await setting(env, 'store_status', 'closed'); await state(''); await say('🔴 Toko CLOSED.'); }
       else await say('Ketik /menu untuk membuka menu.');
     } else await say('Perintah tidak dikenal. Ketik /menu.');
-  } catch (e) { console.error('admin bot', e.message); await say('⚠️ Terjadi error, coba lagi.'); }
+  } catch (e) {
+    console.error('admin bot', e.message);
+    try { await say('⚠️ Error: ' + esc(String(e.message || e).slice(0, 200))); } catch (_) { /* abaikan */ }
+  }
   return new Response('ok');
 }
