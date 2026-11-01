@@ -121,14 +121,15 @@ addEventListener('resize',fxInit);
 /* ---------- pengaturan & status toko ---------- */
 async function loadSettings(){if(!sb)return;const {data}=await sb.from('settings').select('key,value');(data||[]).forEach(r=>S[r.key]=r.value);applyTheme();statusPopup()}
 let cdT;
-function statusPopup(){clearInterval(cdT);const e=$('#pop');if(sessionStorage.getItem('gh_seen_'+S.store_status+S.setup_game))return e.innerHTML='';
+const isAdm=()=>location.pathname.replace(/\/+$/,'')==='/admin'||location.hash.slice(1).split('/')[0]==='admin';
+function statusPopup(){clearInterval(cdT);const e=$('#pop');if(isAdm()||(S.store_status!=='maintenance'&&sessionStorage.getItem('gh_seen_'+S.store_status+S.setup_game)))return e.innerHTML='';
  const st=S.store_status;let d=null;
  if(st==='maintenance')d=['🚧','LAGI MAINTENANCE',esc(S.maintenance_message),S.maintenance_ends_at?'<div class="cd" id="cd">--:--:--</div>':''];
  else if(st==='closed')d=['🔒','TOKO SEDANG TUTUP',esc(S.closed_message||'Toko sedang tutup sementara. Silakan kembali lagi nanti.'),''];
  else if(st==='setup'&&S.setup_game)d=['🛠️','LAGI SETUP GAME','Game '+esc(S.setup_game)+' sedang dalam proses setup. Mohon tunggu ya, skuyy!',''];
  if(!d)return e.innerHTML='';
- e.innerHTML=`<div class="pop"><div class="card"><div class="e">${d[0]}</div><h2>${d[1]}</h2><p class="mut">${d[2]}</p>${d[3]}<br><button class="btn" id="ok">Mengerti</button></div></div>`;
- $('#ok').onclick=()=>{sessionStorage.setItem('gh_seen_'+S.store_status+S.setup_game,1);e.innerHTML=''};
+ e.innerHTML=`<div class="pop"><div class="card"><div class="e">${d[0]}</div><h2>${d[1]}</h2><p class="mut">${d[2]}</p>${d[3]}${st==='maintenance'?'':'<br><button class="btn" id="ok">Mengerti</button>'}</div></div>`;
+ if($('#ok'))$('#ok').onclick=()=>{sessionStorage.setItem('gh_seen_'+S.store_status+S.setup_game,1);e.innerHTML=''};
  if(d[3]){const t=()=>{const r=Math.max(0,new Date(S.maintenance_ends_at)-Date.now()),z=n=>String(n).padStart(2,'0');const el=$('#cd');if(el)el.textContent=z(Math.floor(r/36e5))+':'+z(Math.floor(r%36e5/6e4))+':'+z(Math.floor(r%6e4/1e3));if(!r&&el)el.textContent='Sebentar lagi selesai...'};t();cdT=setInterval(t,1000)}}
 setInterval(loadSettings,30000);
 
@@ -137,7 +138,7 @@ async function route(){const h=location.pathname.replace(/\/+$/,'')==='/admin'?'
  if(!sb){app.innerHTML=window.supabase?'<div class="wrap"><div class="card"><h2 style="margin-top:0">Konfigurasi belum diisi</h2><p class="mut">Isi SUPABASE_URL dan SUPABASE_ANON_KEY di bagian atas script, lalu jalankan SQL part 1 di Supabase.</p></div></div>':'<div class="wrap"><div class="card"><h2 style="margin-top:0">Library Supabase gagal dimuat</h2><p class="mut">Cek koneksi internet, lalu muat ulang halaman. Kalau tetap begini, hapus cache situs ini.</p></div></div>';return}
  app.innerHTML='<div class="wrap mut">Memuat...</div>';
  try{await(({home,game:()=>game(a),history,admin})[p]||home)()}catch(e){app.innerHTML='<div class="wrap"><div class="card bad">Terjadi kesalahan: '+esc(e.message)+'</div></div>'}}
-addEventListener('hashchange',route);
+addEventListener('hashchange',()=>{statusPopup();route()});
 
 async function home(){const [{data:g},{data:bn}]=await Promise.all([sb.from('games').select('*').order('created_at'),sb.from('gh_banners').select('*').eq('is_active',true).order('sort_order')]);
  app.innerHTML=`<div class="wrap"><div class="hero rise"><h1>Top up game, rapi dan terpercaya</h1><p class="mut" style="margin:10px 0 16px">Pilih game, bayar via QRIS, admin proses manual.</p><a class="btn" href="#history">Cek pesanan</a></div>
@@ -170,7 +171,7 @@ async function pay(o){const {data:pm}=await sb.from('gh_payment_methods').select
 
 async function history(){app.innerHTML=`<div class="wrap"><h2 style="margin-top:0">Cek pesanan</h2><div class="card"><input class="in" id="iv" placeholder="Nomor invoice, mis. GH-ABC123"><button class="btn" id="go">Cari</button><div id="res" style="margin-top:12px"></div></div></div>`;
  $('#go').onclick=async()=>{const {data,error}=await sb.rpc('track_order',{p_invoice:$('#iv').value.trim().toUpperCase()});const r=Array.isArray(data)?data[0]:data;
-  $('#res').innerHTML=error||!r?'<p class="bad">Invoice tidak ditemukan.</p>':`<p><b>${esc(r.invoice)}</b> - ${esc(r.game_name)} - ${esc(r.product_name)}</p><p>${rp(r.total)} <span class="bd ${r.status==='success'?'ok':r.status==='failed'?'bad':'warn'}">${esc(r.status)}</span></p>`}}
+  $('#res').innerHTML=error?'<p class="bad">Gagal mencari: '+esc(error.message)+'</p>':!r?'<p class="bad">Invoice tidak ditemukan.</p>':`<p><b>${esc(r.invoice)}</b> - ${esc(r.game_name)} - ${esc(r.product_name)}</p><p>${rp(r.total)} <span class="bd ${r.status==='success'?'ok':r.status==='failed'?'bad':'warn'}">${esc(r.status)}</span></p>`}}
 
 /* ---------- ADMIN (#admin) ---------- */
 async function admin(){const {data:{session}}=await sb.auth.getSession();
