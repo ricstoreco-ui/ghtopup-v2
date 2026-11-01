@@ -136,7 +136,7 @@ setInterval(loadSettings,30000);
 async function route(){const h=location.pathname.replace(/\/+$/,'')==='/admin'?'admin':(location.hash.slice(1)||'home'),[p,a]=h.split('/');scrollTo(0,0);
  if(!sb){app.innerHTML=window.supabase?'<div class="wrap"><div class="card"><h2 style="margin-top:0">Konfigurasi belum diisi</h2><p class="mut">Isi SUPABASE_URL dan SUPABASE_ANON_KEY di bagian atas script, lalu jalankan SQL part 1 di Supabase.</p></div></div>':'<div class="wrap"><div class="card"><h2 style="margin-top:0">Library Supabase gagal dimuat</h2><p class="mut">Cek koneksi internet, lalu muat ulang halaman. Kalau tetap begini, hapus cache situs ini.</p></div></div>';return}
  app.innerHTML='<div class="wrap mut">Memuat...</div>';
- try{await({home,game:()=>game(a),history,admin})[p]?.()||home()}catch(e){app.innerHTML='<div class="wrap"><div class="card bad">Terjadi kesalahan: '+esc(e.message)+'</div></div>'}}
+ try{await(({home,game:()=>game(a),history,admin})[p]||home)()}catch(e){app.innerHTML='<div class="wrap"><div class="card bad">Terjadi kesalahan: '+esc(e.message)+'</div></div>'}}
 addEventListener('hashchange',route);
 
 async function home(){const [{data:g},{data:bn}]=await Promise.all([sb.from('games').select('*').order('created_at'),sb.from('gh_banners').select('*').eq('is_active',true).order('sort_order')]);
