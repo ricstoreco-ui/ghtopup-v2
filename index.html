@@ -7,6 +7,9 @@
 <meta name="google-site-verification" content="s-AzJZ-oDBaNa4rIagbNrwwZIACp-8cTROVYvmSG9B0" />
 <meta name="description" content="GH TOP-UP: top up game cepat dan rapi.">
 <link rel="canonical" href="https://ghtopup-v2.pages.dev/">
+<meta name="theme-color" content="#06070a"><link rel="manifest" href="/manifest.json"><link rel="icon" href="/icon-192.png"><link rel="apple-touch-icon" href="/icon-192.png">
+<meta property="og:title" content="GH TOP-UP"><meta property="og:description" content="Top up game cepat dan rapi."><meta property="og:type" content="website">
+<script>if(location.pathname.replace(/\/+$/,"")==="/admin"){var m=document.createElement("meta");m.name="robots";m.content="noindex,nofollow";document.head.appendChild(m)}</script>
 <title>GH TOP-UP</title>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Sora:wght@400;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.45.4/supabase.min.js"></script>
@@ -73,6 +76,9 @@ h2{margin:18px 0 10px;font-size:18px}
 .row{display:flex;gap:8px}.row>*{flex:1}
 .tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px}.tabs button{white-space:nowrap}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.ban{position:relative;height:150px;border-radius:14px;overflow:hidden;margin:12px 0;border:1px solid var(--line)}.ban a{position:absolute;inset:0;opacity:0;transition:opacity .6s}.ban a.on{opacity:1}.ban img{width:100%;height:100%;object-fit:cover}
+.cbt{position:fixed;left:10px;bottom:10px;z-index:8}.cp{position:fixed;left:10px;bottom:56px;width:min(340px,calc(100vw - 20px));height:420px;max-height:70vh;display:flex;flex-direction:column;background:var(--pan);border:1px solid var(--a);border-radius:14px;z-index:9}.cp[hidden]{display:none}
+.ch{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line)}.cm{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px}.cm div{max-width:85%;padding:7px 10px;border-radius:12px;background:var(--pan2);white-space:pre-wrap;word-break:break-word}.cm .m_buyer{align-self:flex-end;background:var(--a);color:#0a0c10}.cm .m_admin{border:1px solid var(--ok)}.cf{padding:8px;border-top:1px solid var(--line)}.cf .btn{margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -93,6 +99,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const rp=n=>'Rp '+Number(n||0).toLocaleString('id-ID');
 const fin=p=>Math.max(0,(p.price||0)-(p.discount||0));
 const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',2600)};
+const su=u=>/^https?:\/\//i.test(u||'')?u:'';
 const wa62=n=>String(n||'').replace(/\D/g,'').replace(/^0/,'62');
 let S={store_status:'online',theme:'chrome',event_preset:'ramadan',wa_admin:'083848591646',running_text:'Selamat datang di GH TOP-UP',closed_message:'Toko sedang tutup sementara. Silakan kembali lagi nanti.',maintenance_message:'Web lagi proses update skuyy, mohon sabar ya. Ntar beres!',maintenance_ends_at:'',setup_game:'',qris_url:''};
 const closedNow=()=>S.store_status==='closed'||S.store_status==='maintenance';
@@ -126,36 +133,38 @@ function statusPopup(){clearInterval(cdT);const e=$('#pop');if(sessionStorage.ge
 setInterval(loadSettings,30000);
 
 /* ---------- router ---------- */
-async function route(){const h=location.hash.slice(1)||'home',[p,a]=h.split('/');scrollTo(0,0);
+async function route(){const h=location.pathname.replace(/\/+$/,'')==='/admin'?'admin':(location.hash.slice(1)||'home'),[p,a]=h.split('/');scrollTo(0,0);
  if(!sb){app.innerHTML='<div class="wrap"><div class="card"><h2 style="margin-top:0">Konfigurasi belum diisi</h2><p class="mut">Isi SUPABASE_URL dan SUPABASE_ANON_KEY di bagian atas script, lalu jalankan SQL part 1 di Supabase.</p></div></div>';return}
  app.innerHTML='<div class="wrap mut">Memuat...</div>';
  try{await({home,game:()=>game(a),history,admin})[p]?.()||home()}catch(e){app.innerHTML='<div class="wrap"><div class="card bad">Terjadi kesalahan: '+esc(e.message)+'</div></div>'}}
 addEventListener('hashchange',route);
 
-async function home(){const {data:g}=await sb.from('games').select('*').order('created_at');
+async function home(){const [{data:g},{data:bn}]=await Promise.all([sb.from('games').select('*').order('created_at'),sb.from('gh_banners').select('*').eq('is_active',true).order('sort_order')]);
  app.innerHTML=`<div class="wrap"><div class="hero rise"><h1>Top up game, rapi dan terpercaya</h1><p class="mut" style="margin:10px 0 16px">Pilih game, bayar via QRIS, admin proses manual.</p><a class="btn" href="#history">Cek pesanan</a></div>
- <div class="run"><span>${esc(S.running_text)}</span></div><h2>Pilih game</h2>
+ ${bn&&bn.length?`<div class="ban">${bn.map((b,i)=>`<a class="${i?'':'on'}" ${su(b.link_url)?`href="${esc(su(b.link_url))}" target="_blank" rel="noopener"`:''}><img src="${esc(su(b.image_url))}" alt="${esc(b.title)}"></a>`).join('')}</div>`:''}<div class="run"><span>${esc(S.running_text)}</span></div><h2>Pilih game</h2>
  ${g&&g.length?`<div class="grid">${g.map(x=>{const o=x.status!=='online';return `<div class="card gc hv rise ${o?'cl':''}" onclick="${o?`toast('${x.status==='setup'?'Game ini sedang disetup, coba lagi nanti ya kak.':'Game ini sedang offline.'}')`:`location.hash='#game/${x.id}'`}">${x.logo_url?`<img src="${esc(x.logo_url)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`:'<i></i>'}<b>${esc(x.name)}</b><div class="sm mut">${x.status==='setup'?'🛠️ CLOSE - LAGI SETUP':x.status==='offline'?'⛔ Offline':esc(x.category||'Tersedia')}</div></div>`}).join('')}</div>`
- :`<div class="card" style="text-align:center;padding:36px 16px"><h2 style="margin-top:0">Belum ada game</h2><p class="mut">Admin akan segera menambahkan.</p><br><a class="btn n" href="https://wa.me/${wa62(S.wa_admin)}">Hubungi admin via WhatsApp</a></div>`}</div>`}
+ :`<div class="card" style="text-align:center;padding:36px 16px"><h2 style="margin-top:0">Belum ada game</h2><p class="mut">Admin akan segera menambahkan.</p><br><a class="btn n" href="https://wa.me/${wa62(S.wa_admin)}">Hubungi admin via WhatsApp</a></div>`}</div>`;clearInterval(window.bT);const bs=document.querySelectorAll('.ban a');if(bs.length>1){let i=0;window.bT=setInterval(()=>{bs[i].classList.remove('on');i=(i+1)%bs.length;bs[i].classList.add('on')},4000)}}
 
 let sel=null;
-async function game(id){const [{data:g},{data:ps}]=await Promise.all([sb.from('games').select('*').eq('id',id).single(),sb.from('products').select('*').eq('game_id',id).order('price')]);
+async function game(id){const [{data:g},{data:ps}]=await Promise.all([sb.from('games').select('*').eq('id',id).single(),sb.from('products').select('*').eq('game_id',id).or('is_active.is.null,is_active.eq.true').order('price')]);
  sel=null;const lock=closedNow();
  app.innerHTML=`<div class="wrap"><h2 style="margin-top:0">${esc(g.name)}</h2>
  ${lock?`<div class="card warn" style="margin-bottom:12px">${S.store_status==='closed'?'Toko sedang tutup, kamu hanya bisa melihat produk.':'Sedang maintenance, checkout dimatikan sementara.'}</div>`:''}
  <div class="grid">${(ps||[]).map(p=>`<div class="card pick hv rise" data-id="${p.id}"><b>${esc(p.name)}</b> ${p.label&&p.label!=='none'?`<span class="bd warn">${esc(p.label)}</span>`:''}<div>${p.discount?`<span class="dl sm">${rp(p.price)}</span> `:''}${rp(fin(p))}</div><div class="sm ok">Selalu tersedia</div></div>`).join('')||'<p class="mut">Belum ada produk.</p>'}</div>
- <h2>Data pesanan</h2><div class="card"><label>User ID</label><input class="in" id="uid" inputmode="numeric"><label>Server ID (jika ada)</label><input class="in" id="sid"><label>Nomor WhatsApp</label><input class="in" id="wa" inputmode="tel" placeholder="08xxxxxxxxxx"><label><input type="checkbox" id="tos"> Saya setuju syarat dan ketentuan</label><br><br>
+ <h2>Data pesanan</h2><div class="card"><label>User ID</label><input class="in" id="uid" inputmode="numeric"><label>Server ID (jika ada)</label><input class="in" id="sid"><label>Nomor WhatsApp</label><input class="in" id="wa" inputmode="tel" placeholder="08xxxxxxxxxx"><label>Kode voucher (opsional)</label><input class="in" id="vc" autocapitalize="characters"><label><input type="checkbox" id="tos"> Saya setuju syarat dan ketentuan</label><br><br>
  <button class="btn" id="buy" ${lock?'disabled title="Toko sedang tutup, coba lagi nanti"':''}>${lock?'Checkout dimatikan':'Buat pesanan'}</button></div></div>`;
  document.querySelectorAll('.pick').forEach(el=>el.onclick=()=>{document.querySelectorAll('.pick').forEach(e=>e.classList.remove('on'));el.classList.add('on');sel=el.dataset.id});
  $('#buy').onclick=async()=>{if(closedNow())return toast('Toko sedang tutup, coba lagi nanti');
   const uid=$('#uid').value.trim(),wa=$('#wa').value.trim();
   if(!sel)return toast('Pilih produk dulu');if(!/^\d{4,20}$/.test(uid))return toast('User ID tidak valid');if(!/^08\d{8,12}$/.test(wa))return toast('Nomor WA tidak valid');if(!$('#tos').checked)return toast('Setujui syarat dan ketentuan');
-  $('#buy').disabled=true;const {data,error}=await sb.rpc('create_order',{p_product:sel,p_user_id:uid,p_server_id:$('#sid').value.trim(),p_wa:wa});
-  if(error){$('#buy').disabled=false;return toast(error.message)}pay(data)}}
+  $('#buy').disabled=true;const {data,error}=await sb.rpc('create_order',{p_product:sel,p_user_id:uid,p_server_id:$('#sid').value.trim(),p_wa:wa,p_voucher:$('#vc').value.trim()||null});
+  if(error){$('#buy').disabled=false;return toast(error.message)}pay(data);fetch('/api/notify',{method:'POST',body:JSON.stringify({invoice:data.invoice,kind:'order'})}).catch(()=>{})}}
 
-function pay(o){app.innerHTML=`<div class="wrap"><h2 style="margin-top:0">Pembayaran QRIS</h2><div class="card" style="text-align:center">
- ${S.qris_url?`<img src="${esc(S.qris_url)}" alt="QRIS" style="max-width:220px;width:100%;border-radius:10px;background:#fff">`:'<p class="mut">QRIS belum diatur admin.</p>'}
- <p>Invoice <b>${esc(o.invoice)}</b></p><p>Total <b>${rp(o.total)}</b></p>
+async function pay(o){const {data:pm}=await sb.from('gh_payment_methods').select('*').eq('is_active',true).order('sort_order');
+ const L=pm&&pm.length?pm:(S.qris_url?[{name:'QRIS',image_url:S.qris_url}]:[]);
+ const box=L.map(m=>`<div class="card" style="margin:10px 0"><b>${esc(m.name)}</b>${su(m.image_url)?`<br><img src="${esc(su(m.image_url))}" alt="" style="max-width:220px;width:100%;border-radius:10px;background:#fff;margin-top:8px">`:''}${m.account_number?`<p>${esc(m.account_number)} <button class="btn g" data-c="${esc(m.account_number)}" onclick="navigator.clipboard.writeText(this.dataset.c);toast('Disalin')">Salin</button></p>`:''}${m.account_name?`<p class="sm mut">a.n. ${esc(m.account_name)}</p>`:''}${m.note?`<p class="sm mut">${esc(m.note)}</p>`:''}</div>`).join('')||'<p class="mut">Metode pembayaran belum diatur admin.</p>';
+ app.innerHTML=`<div class="wrap"><h2 style="margin-top:0">Pembayaran</h2><div class="card" style="text-align:center"><p>Invoice <b>${esc(o.invoice)}</b></p><p>Total <b>${rp(o.total)}</b></p>${box}
+ <div class="card" style="margin:10px 0"><p class="sm mut">Upload bukti pembayaran (JPG/PNG/WebP, maks 5 MB)</p><input type="file" id="pf" accept="image/jpeg,image/png,image/webp" class="in"><button class="btn" id="pu" onclick="upProof('${esc(o.invoice)}')">Kirim bukti</button></div>
  <a class="btn n" href="https://wa.me/${wa62(S.wa_admin)}?text=${encodeURIComponent('Halo admin, saya sudah bayar invoice '+o.invoice)}">Konfirmasi ke admin via WhatsApp</a>
  <p class="sm mut" style="margin-top:10px">Pembayaran diverifikasi manual oleh admin. Simpan nomor invoice untuk cek status.</p></div></div>`}
 
@@ -171,31 +180,61 @@ async function admin(){const {data:{session}}=await sb.auth.getSession();
  if(!ok){await sb.auth.signOut();return app.innerHTML='<div class="wrap"><div class="card bad">Akun ini bukan admin.</div></div>'}
  admTab('orders')}
 let GL=[];
-async function admTab(t){const nav=`<div class="wrap"><div class="tabs">${[['orders','Pesanan'],['games','Game'],['products','Produk'],['store','Toko & Tema']].map(x=>`<button class="btn ${x[0]===t?'':'g'}" onclick="admTab('${x[0]}')">${x[1]}</button>`).join('')}<button class="btn g" onclick="sb.auth.signOut().then(()=>route())">Keluar</button></div><div id="ab"></div></div>`;
+async function admTab(t){const nav=`<div class="wrap"><div class="tabs">${[['orders','Pesanan'],['games','Game'],['products','Produk'],['banners','Banner'],['pay','Pembayaran'],['store','Toko & Tema']].map(x=>`<button class="btn ${x[0]===t?'':'g'}" onclick="admTab('${x[0]}')">${x[1]}</button>`).join('')}<button class="btn g" onclick="sb.auth.signOut().then(()=>route())">Keluar</button></div><div id="ab"></div></div>`;
  app.innerHTML=nav;const b=$('#ab');const {data:g}=await sb.from('games').select('*').order('created_at');GL=g||[];
  if(t==='orders'){const {data:o}=await sb.from('orders').select('*').order('created_at',{ascending:false}).limit(50);
-  b.innerHTML=`<div class="card ov"><table><tr><th>Invoice</th><th>Game</th><th>Total</th><th>Status</th><th>Aksi</th></tr>${(o||[]).map(r=>`<tr><td>${esc(r.invoice)}</td><td>${esc(r.game_name)}</td><td>${rp(r.total)}</td><td>${esc(r.status)}</td><td><button class="btn g" onclick="setSt('${r.id}','success')">Sukses</button> <button class="btn g" onclick="setSt('${r.id}','failed')">Gagal</button></td></tr>`).join('')||'<tr><td>Belum ada pesanan</td></tr>'}</table></div>`}
- if(t==='games')b.innerHTML=`<div class="card"><h3>Tambah game</h3><input class="in" id="gn" placeholder="Nama game lengkap"><input class="in" id="gs" placeholder="Singkatan"><select class="in" id="gc"><option>MOBA</option><option>Battle Royale</option><option>RPG</option><option>FPS</option><option>Lainnya</option></select><input class="in" id="gl" placeholder="Link logo (https://...)"><select class="in" id="gt"><option value="setup">Setup</option><option value="offline">Offline</option><option value="online">Online</option></select><button class="btn" onclick="addGame()">Simpan dan lanjut isi produk</button></div><br><div class="card ov"><table><tr><th>Game</th><th>Status</th><th>Aksi</th></tr>${GL.map(x=>`<tr><td>${esc(x.name)}</td><td><select class="in" style="margin:0" onchange="gSt('${x.id}',this.value)">${['online','setup','offline'].map(s=>`<option ${s===x.status?'selected':''}>${s}</option>`).join('')}</select></td><td><button class="btn g" onclick="delRow('games','${x.id}')">Hapus</button></td></tr>`).join('')}</table></div>`;
- if(t==='products'){const gid=window.admGame||GL[0]?.id;window.admGame=gid;const {data:p}=await sb.from('products').select('*').eq('game_id',gid||'').order('price');
+  b.innerHTML=`<div class="card ov"><table><tr><th>Invoice</th><th>Game / Produk</th><th>User ID</th><th>WA</th><th>Total</th><th>Status</th><th>Aksi</th></tr>${(o||[]).map(r=>`<tr><td>${esc(r.invoice)}</td><td>${esc(r.game_name)} - ${esc(r.product_name)}</td><td>${esc(r.game_user_id)}${r.server_id?' ('+esc(r.server_id)+')':''}</td><td><a href="https://wa.me/${wa62(r.wa)}" target="_blank" rel="noopener">${esc(r.wa)}</a></td><td>${rp(r.total)}</td><td>${esc(r.status)}${r.proof_url?` <button class="btn g" onclick="vProof('${esc(r.proof_url)}')">Bukti</button>`:''}</td><td><button class="btn g" onclick="setSt('${r.id}','success')">Sukses</button> <button class="btn g" onclick="setSt('${r.id}','failed')">Gagal</button></td></tr>`).join('')||'<tr><td>Belum ada pesanan</td></tr>'}</table></div>`}
+ if(t==='games')b.innerHTML=`<div class="card"><h3>Tambah game</h3><input class="in" id="gn" placeholder="Nama game lengkap"><input class="in" id="gs" placeholder="Singkatan"><select class="in" id="gc"><option>MOBA</option><option>Battle Royale</option><option>RPG</option><option>FPS</option><option>Lainnya</option></select><input class="in" id="gl" placeholder="Link logo (https://...)"><select class="in" id="gt"><option value="setup">Setup</option><option value="offline">Offline</option></select><button class="btn" onclick="addGame()">Simpan dan lanjut isi produk</button></div><br><div class="card ov"><table><tr><th>Game</th><th>Status</th><th>Aksi</th></tr>${GL.map(x=>`<tr><td>${esc(x.name)}</td><td><select class="in" style="margin:0" onchange="gSt('${x.id}',this.value)">${['online','setup','offline'].map(s=>`<option ${s===x.status?'selected':''}>${s}</option>`).join('')}</select></td><td><button class="btn g" onclick="delRow('games','${x.id}')">Hapus</button></td></tr>`).join('')}</table></div>`;
+ if(t==='products'){const gid=window.admGame||GL[0]?.id;window.admGame=gid;const {data:p}=await sb.from('products').select('*').eq('game_id',gid||0).order('price');window.PM={};(p||[]).forEach(r=>PM[r.id]=r);
   b.innerHTML=`<select class="in" onchange="admGame=this.value;admTab('products')">${GL.map(x=>`<option value="${x.id}" ${String(x.id)===String(gid)?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
   <div class="card"><h3 id="pt">Tambah produk</h3><input type="hidden" id="pi"><input class="in" id="pn" placeholder="Nama produk, mis. 10 DM"><div class="row"><input class="in" id="pp" inputmode="numeric" placeholder="Harga asli"><input class="in" id="pd" inputmode="numeric" placeholder="Diskon (potongan Rp)"></div><p>Harga akhir: <b id="pf" class="ok">Rp 0</b></p><select class="in" id="pl"><option value="none">Tidak ada label</option><option>Flash Sale</option><option>Diskon</option><option>New</option></select><button class="btn" onclick="saveProd()">Simpan produk</button> <button class="btn g bad" onclick="delProd()">Hapus produk</button></div><br>
-  <div class="card ov"><table><tr><th>Produk</th><th>Harga</th><th>Diskon</th><th>Akhir</th><th></th></tr>${(p||[]).map(r=>`<tr><td>${esc(r.name)}</td><td>${rp(r.price)}</td><td>${rp(r.discount)}</td><td>${rp(fin(r))}</td><td><button class="btn g" onclick='editProd(${JSON.stringify(r).replace(/'/g,"&#39;")})'>Edit</button></td></tr>`).join('')}</table></div>`;
+  <div class="card ov"><table><tr><th>Produk</th><th>Harga</th><th>Diskon</th><th>Akhir</th><th></th></tr>${(p||[]).map(r=>`<tr><td>${esc(r.name)}</td><td>${rp(r.price)}</td><td>${rp(r.discount)}</td><td>${rp(fin(r))}</td><td><button class="btn g" onclick="editProd('${r.id}')">Edit</button></td></tr>`).join('')}</table></div>`;
   const c=()=>$('#pf').textContent=rp(Math.max(0,(+$('#pp').value||0)-(+$('#pd').value||0)));$('#pp').oninput=c;$('#pd').oninput=c}
  if(t==='store'){const F=(k,l,h)=>`<label>${l}</label>${h||`<input class="in" data-k="${k}" value="${esc(S[k])}">`}`,O=(k,a)=>`<select class="in" data-k="${k}">${a.map(v=>`<option ${v===S[k]?'selected':''}>${v}</option>`).join('')}</select>`;
-  b.innerHTML=`<div class="card">${F('store_status','Status toko',O('store_status',['online','maintenance','closed','setup']))}${F('closed_message','Pesan saat tutup')}${F('maintenance_message','Pesan maintenance')}${F('maintenance_ends_at','Maintenance selesai (format 2026-11-02T18:00:00+07:00)')}${F('setup_game','Game yang disetup (nama)',`<select class="in" data-k="setup_game"><option value="">-</option>${GL.map(x=>`<option ${x.name===S.setup_game?'selected':''}>${esc(x.name)}</option>`).join('')}</select>`)}${F('theme','Tema',O('theme',['chrome','neon','cyber','ocean','gold','event']))}${F('event_preset','Varian tema event',O('event_preset',['ramadan','natal','tahunbaru','musimpanas']))}${F('running_text','Running text')}${F('wa_admin','WhatsApp admin')}${F('qris_url','Link gambar QRIS')}<button class="btn" onclick="saveStore()">Simpan pengaturan</button></div>`}}
+  b.innerHTML=`<div class="card">${F('store_status','Status toko',O('store_status',['online','maintenance','closed','setup']))}${F('closed_message','Pesan saat tutup')}${F('maintenance_message','Pesan maintenance')}${F('maintenance_ends_at','Maintenance selesai (format 2026-11-02T18:00:00+07:00)')}${F('setup_game','Game yang disetup (nama)',`<select class="in" data-k="setup_game"><option value="">-</option>${GL.map(x=>`<option ${x.name===S.setup_game?'selected':''}>${esc(x.name)}</option>`).join('')}</select>`)}${F('theme','Tema',O('theme',['chrome','neon','cyber','ocean','gold','event']))}${F('event_preset','Varian tema event',O('event_preset',['ramadan','natal','tahunbaru','musimpanas']))}${F('running_text','Running text')}${F('wa_admin','WhatsApp admin')}${F('qris_url','Link gambar QRIS')}<button class="btn" onclick="saveStore()">Simpan pengaturan</button></div>`}
+ if(t==='banners')await admBan(b);if(t==='pay')await admPay(b)}
 const setSt=async(id,s)=>{const {error}=await sb.from('orders').update({status:s}).eq('id',id);toast(error?error.message:'Status diubah');admTab('orders')};
 async function addGame(){const n=$('#gn').value.trim();if(!n)return toast('Isi nama game');const {data,error}=await sb.from('games').insert({name:n,short_name:$('#gs').value.trim(),category:$('#gc').value,logo_url:$('#gl').value.trim(),status:$('#gt').value}).select().single();if(error)return toast(error.message);window.admGame=data.id;toast('Game disimpan, lanjut isi produk');admTab('products')}
 const gSt=async(id,s)=>{const {error}=await sb.from('games').update({status:s}).eq('id',id);toast(error?error.message:'Status game diubah')};
 const delRow=async(t,id)=>{if(!confirm('Hapus data ini?'))return;const {error}=await sb.from(t).delete().eq('id',id);toast(error?error.message:'Dihapus');admTab(t)};
-function editProd(r){$('#pt').textContent='Edit produk';$('#pi').value=r.id;$('#pn').value=r.name;$('#pp').value=r.price;$('#pd').value=r.discount;$('#pl').value=r.label||'none';$('#pp').oninput();scrollTo(0,0)}
+function editProd(id){const r=PM[id];$('#pt').textContent='Edit produk';$('#pi').value=r.id;$('#pn').value=r.name;$('#pp').value=r.price;$('#pd').value=r.discount;$('#pl').value=r.label||'none';$('#pp').oninput();scrollTo(0,0)}
 async function saveProd(){const row={game_id:window.admGame,name:$('#pn').value.trim(),price:+$('#pp').value||0,discount:+$('#pd').value||0,label:$('#pl').value};if(!row.name||row.price<=0)return toast('Isi nama dan harga');if(row.discount>=row.price)return toast('Diskon harus lebih kecil dari harga');
  const id=$('#pi').value,q=id?sb.from('products').update(row).eq('id',id):sb.from('products').insert(row);const {error}=await q;toast(error?error.message:'Produk disimpan');admTab('products')}
 function delProd(){const id=$('#pi').value;if(!id)return toast('Pilih produk lewat tombol Edit dulu');delRow('products',id)}
 async function saveStore(){const rows=[...document.querySelectorAll('[data-k]')].map(e=>({key:e.dataset.k,value:e.value}));const {error}=await sb.from('settings').upsert(rows);toast(error?error.message:'Pengaturan disimpan');if(!error){await loadSettings()}}
 
+async function upProof(inv){const f=$('#pf').files[0];if(!f)return toast('Pilih gambar bukti dulu');if(f.size>5242880)return toast('Maksimal 5 MB');const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[f.type];if(!ext)return toast('Format harus JPG/PNG/WebP');
+ $('#pu').disabled=true;const path=inv+'/'+Date.now()+'.'+ext;const u=await sb.storage.from('bukti-transfer').upload(path,f,{contentType:f.type});if(u.error){$('#pu').disabled=false;return toast('Upload gagal: '+u.error.message)}
+ const r=await sb.rpc('submit_proof',{p_invoice:inv,p_path:path});if(r.error){$('#pu').disabled=false;return toast(r.error.message)}
+ fetch('/api/notify',{method:'POST',body:JSON.stringify({invoice:inv,kind:'proof'})}).catch(()=>{});toast('Bukti terkirim, admin akan memverifikasi');$('#pu').textContent='Terkirim ✔'}
+async function vProof(p){const {data,error}=await sb.storage.from('bukti-transfer').createSignedUrl(p,300);if(error)return toast(error.message);open(data.signedUrl,'_blank')}
+const delR=async(t,id,tab)=>{if(!confirm('Hapus data ini?'))return;const {error}=await sb.from(t).delete().eq('id',id);toast(error?error.message:'Dihapus');admTab(tab)};
+const togR=async(t,id,v,tab)=>{const {error}=await sb.from(t).update({is_active:v}).eq('id',id);toast(error?error.message:'Diubah');admTab(tab)};
+async function saveR(t,row,tab){if(t==='gh_banners'&&!su(row.image_url))return toast('Link gambar harus diawali https://');if(t==='gh_payment_methods'&&!row.name)return toast('Isi nama metode');if(row.image_url&&!su(row.image_url))return toast('Link gambar harus diawali https://');const {error}=await sb.from(t).insert(row);toast(error?error.message:'Disimpan');admTab(tab)}
+const aRows=(t,tab,d,f)=>`<div class="card ov"><table>${(d||[]).map(r=>`<tr><td>${f(r)}</td><td><button class="btn g" onclick="togR('${t}','${r.id}',${!r.is_active},'${tab}')">${r.is_active?'Aktif':'Nonaktif'}</button></td><td><button class="btn g bad" onclick="delR('${t}','${r.id}','${tab}')">Hapus</button></td></tr>`).join('')||'<tr><td>Belum ada data</td></tr>'}</table></div>`;
+async function admBan(b){const {data}=await sb.from('gh_banners').select('*').order('sort_order');
+ b.innerHTML=`<div class="card"><h3>Tambah banner</h3><input class="in" id="bt" placeholder="Judul (opsional)"><input class="in" id="bi" placeholder="Link gambar (https://...)"><input class="in" id="bl" placeholder="Link tujuan (opsional)"><button class="btn" onclick="saveR('gh_banners',{title:$('#bt').value.trim(),image_url:$('#bi').value.trim(),link_url:$('#bl').value.trim()||null},'banners')">Simpan banner</button></div><br>`+aRows('gh_banners','banners',data,r=>esc(r.title||r.image_url).slice(0,50))}
+async function admPay(b){const {data}=await sb.from('gh_payment_methods').select('*').order('sort_order');
+ b.innerHTML=`<div class="card"><h3>Tambah metode pembayaran</h3><input class="in" id="yn" placeholder="Nama, mis. QRIS / BCA / DANA"><select class="in" id="yt"><option value="qris">QRIS</option><option value="bank">Bank</option><option value="ewallet">E-wallet</option></select><input class="in" id="ya" placeholder="Nama pemilik rekening"><input class="in" id="yb" placeholder="Nomor rekening / e-wallet"><input class="in" id="yi" placeholder="Link gambar QRIS (https://...)"><input class="in" id="yc" placeholder="Catatan (opsional)"><button class="btn" onclick="saveR('gh_payment_methods',{name:$('#yn').value.trim(),type:$('#yt').value,account_name:$('#ya').value.trim()||null,account_number:$('#yb').value.trim()||null,image_url:$('#yi').value.trim()||null,note:$('#yc').value.trim()||null},'pay')">Simpan metode</button></div><br>`+aRows('gh_payment_methods','pay',data,r=>esc(r.name)+' <span class="bd">'+esc(r.type)+'</span>')}
+
+/* ---------- CHAT CS (web <-> Telegram) ---------- */
+const CH={s:localStorage.getItem('gh_cs')||'',a:0,open:false,t:null};
+const cfn=async b=>{const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY},body:JSON.stringify({session:CH.s,after:CH.a,...b})});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Chat gagal');return j};
+function cApply(j){CH.s=j.session;localStorage.setItem('gh_cs',CH.s);$('#ch').style.display=j.mode==='human'?'none':'';const el=$('#cm');
+ j.messages.forEach(m=>{CH.a=Math.max(CH.a,m.id);const x=document.createElement('div');x.className='m_'+m.sender;x.textContent=m.body;el.append(x);if(!CH.open&&m.sender==='admin')$('#cn').textContent=' (•)'});el.scrollTop=1e9}
+async function cPoll(){if(!CH.s)return;try{cApply(await cfn({action:'poll'}))}catch(e){if(/tidak ditemukan/.test(e.message)){CH.s='';CH.a=0;localStorage.removeItem('gh_cs');clearInterval(CH.t)}}}
+const cTick=()=>{clearInterval(CH.t);CH.t=setInterval(cPoll,CH.open?2500:12000)};
+function chatUI(){const d=document.createElement('div');d.innerHTML='<button class="btn n cbt" id="cbt">💬 Chat CS<span id="cn"></span></button><div class="cp" id="cp" hidden><div class="ch"><b>Chat CS</b><button class="btn g" id="cx">✕</button></div><div class="cm" id="cm"></div><div class="cf"><button class="btn g" id="ch" style="width:100%">Hubungi admin</button><div class="row"><input class="in" id="ci" maxlength="500" placeholder="Tulis pesan..." style="margin:0"><button class="btn" id="cs" style="flex:0 0 auto">Kirim</button></div></div></div>';document.body.append(d);
+ $('#cbt').onclick=async()=>{CH.open=true;$('#cp').hidden=false;$('#cn').textContent='';try{cApply(await cfn({action:CH.a||$('#cm').children.length?'poll':'start'}))}catch(e){if(/tidak ditemukan/.test(e.message)){CH.s='';try{cApply(await cfn({action:'start'}))}catch(x){toast(x.message)}}else toast(e.message)}cTick()};
+ $('#cx').onclick=()=>{CH.open=false;$('#cp').hidden=true;cTick()};
+ $('#cs').onclick=async()=>{const v=$('#ci').value.trim();if(!v)return;$('#ci').value='';try{cApply(await cfn({action:'send',text:v}))}catch(e){toast(e.message)}};
+ $('#ci').onkeydown=e=>{if(e.key==='Enter')$('#cs').click()};
+ $('#ch').onclick=async()=>{try{cApply(await cfn({action:'human'}))}catch(e){toast(e.message)}};
+ if(CH.s){cPoll();cTick()}}
+
 /* ---------- mulai ---------- */
-(async()=>{applyTheme();setTimeout(()=>{$('#intro').classList.add('out')},sessionStorage.getItem('gh_i')?100:1500);sessionStorage.setItem('gh_i',1);await loadSettings();route()})();
-if('serviceWorker'in navigator&&0)navigator.serviceWorker.register('/sw.js');
+(async()=>{chatUI();applyTheme();setTimeout(()=>{$('#intro').classList.add('out')},sessionStorage.getItem('gh_i')?100:1500);sessionStorage.setItem('gh_i',1);await loadSettings();route()})();
+if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 </script>
 </body>
 </html>
