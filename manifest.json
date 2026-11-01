@@ -1,2 +1,25 @@
-{"name":"GH TOP-UP","short_name":"GH TOP-UP","description":"Top up game cepat dan rapi.","start_url":"/","scope":"/","display":"standalone","background_color":"#06070a","theme_color":"#06070a","icons":[{"src":"/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},{"src":"/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}
-
+{
+  "id": "/",
+  "name": "GH TOP-UP",
+  "short_name": "GH TOP-UP",
+  "description": "Top up game cepat dan rapi.",
+  "lang": "id",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#06070a",
+  "theme_color": "#06070a",
+  "categories": ["games", "shopping"],
+  "prefer_related_applications": false,
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Cek Pesanan", "short_name": "Riwayat", "url": "/#history", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Stok Akun", "short_name": "Stok Akun", "url": "/#stock", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] }
+  ]
+}
