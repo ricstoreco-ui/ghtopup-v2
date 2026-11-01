@@ -9,7 +9,7 @@ export async function onRequestPost({ request, env }) {
   if (!o || o.status !== 'waiting_review') return json({ ok: false });
   const ins = await db(env, 'settings?on_conflict=key', { method: 'POST', body: { key: `private_n_${kind}_${invoice}`, value: '1' }, prefer: 'resolution=ignore-duplicates,return=representation' });
   if (!ins?.length) return json({ ok: true, dup: true });
-  const cap = `🧾 <b>BUKTI TRANSFER MASUK</b>\nInvoice: <code>${invoice}</code>\n${esc(o.game_name)} - ${esc(o.product_name)}\nUser ID: ${esc(o.game_user_id)}${o.server_id ? ' (' + esc(o.server_id) + ')' : ''}\nWA: ${esc(o.wa)}\nTotal: Rp ${Number(o.total).toLocaleString('id-ID')}\nMetode: ${esc(o.payment_method || '-')}`;
+  const cap = `🧾 <b>BUKTI TRANSFER MASUK</b>\nInvoice: <code>${invoice}</code>\n${esc(o.game_name)} - ${esc(o.product_name)}\nUser ID: ${esc(o.game_user_id)}${o.server_id ? ' (' + esc(o.server_id) + ')' : ''}\nWA: ${esc(o.wa)}\nHarga: Rp ${Number(o.total).toLocaleString('id-ID')}\nBiaya admin: Rp ${Number(o.admin_fee || 0).toLocaleString('id-ID')}\nTOTAL BAYAR: Rp ${Number(o.pay_total || o.total).toLocaleString('id-ID')}\nMetode: ${esc(o.payment_method || '-')}`;
   const kb = { inline_keyboard: [[{ text: '✅ Sukses', callback_data: 'ok_' + invoice }, { text: '❌ Gagal', callback_data: 'no_' + invoice }]] };
   const url = o.proof_url ? await signProof(env, o.proof_url) : null;
   if (url) await tg(env.TELEGRAM_BOT_TOKEN, 'sendPhoto', { chat_id: env.TELEGRAM_CHAT_ID, photo: url, caption: cap, parse_mode: 'HTML', reply_markup: kb });
