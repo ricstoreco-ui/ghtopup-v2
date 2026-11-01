@@ -218,7 +218,29 @@ applyTheme=()=>{at5();const K=evKey();if(EV5[K]){const e=$('#evd');if(e){e.class
 /* ---------- admin: pilihan varian tema event ---------- */
 const EVO=[['ramadan','Ramadan'],['natalbaru','Natal & Tahun Baru'],['imlek','Imlek'],['musimpanas','Musim Panas']];
 const a5=admTab;
-admTab=async t=>{await a5(t);if(t==='store'){const s=document.querySelector('select[data-k="event_preset"]');if(s){const v=norm(S.event_preset||'ramadan');s.innerHTML=EVO.map(([k,l])=>`<option value="${k}" ${k===v?'selected':''}>${l}</option>`).join('')}}};
+admTab=async t=>{await a5(t);if(t==='orders')ordBulk();if(t==='store'){const s=document.querySelector('select[data-k="event_preset"]');if(s){const v=norm(S.event_preset||'ramadan');s.innerHTML=EVO.map(([k,l])=>`<option value="${k}" ${k===v?'selected':''}>${l}</option>`).join('')}}};
+
+
+/* ---------- admin pesanan: filter status + hapus massal ---------- */
+const ST6=[['all','Semua status'],['pending','Pending'],['waiting_review','Menunggu cek'],['success','Sukses'],['failed','Gagal'],['expired','Kedaluwarsa']];
+function ordBulk(){const b=$('#ab');if(!b||b.querySelector('#bk6'))return;
+ const d=document.createElement('div');d.className='card';d.id='bk6';d.style.marginBottom='12px';
+ d.innerHTML=`<h3>Filter dan hapus massal</h3><div class="row"><select class="in" id="bf6" style="margin:0">${ST6.map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select><button class="btn g bad" id="bd6" style="flex:0 0 auto">Hapus semua yang terfilter</button></div><p class="sm mut" id="bi6" style="margin-top:8px"></p>`;
+ b.prepend(d);
+ const sel=$('#bf6'),info=$('#bi6');
+ const count=async()=>{let q=sb.from('orders').select('id',{count:'exact',head:true});if(sel.value!=='all')q=q.eq('status',sel.value);const {count:n}=await q;return n||0};
+ const apply=async()=>{document.querySelectorAll('#ab table tr').forEach(tr=>{if(!tr.querySelector('[onclick*="setSt("]'))return;const s=(tr.children[5]?tr.children[5].textContent:'').trim();tr.style.display=sel.value==='all'||s.startsWith(sel.value)?'':'none'});
+  const n=await count();info.textContent='Di database: '+n+' pesanan'+(sel.value==='all'?'':' berstatus '+sel.value)+'. Tabel hanya menampilkan 50 terbaru, tapi hapus massal berlaku untuk semuanya.'};
+ sel.onchange=apply;apply();
+ $('#bd6').onclick=async()=>{const v=sel.value,n=await count();if(!n)return toast('Tidak ada pesanan untuk dihapus');const lbl=ST6.find(x=>x[0]===v)[1];
+  if(v==='all'){if(prompt('Ini menghapus SEMUA '+n+' pesanan, termasuk yang sukses (omzet jadi 0). Ketik HAPUS untuk lanjut:')!=='HAPUS')return toast('Dibatalkan')}
+  else if(!confirm('Hapus permanen '+n+' pesanan berstatus "'+lbl+'"? Bukti transfer ikut dihapus.'+(v==='success'?' Omzet ikut berkurang.':'')))return;
+  $('#bd6').disabled=true;let del=0;
+  try{for(;;){let q=sb.from('orders').select('id,proof_url').limit(200);if(v!=='all')q=q.eq('status',v);const {data,error}=await q;if(error)throw error;if(!data||!data.length)break;
+    const {data:d2,error:e2}=await sb.from('orders').delete().in('id',data.map(r=>r.id)).select('id');if(e2)throw e2;if(!d2||!d2.length)throw new Error('izin hapus belum ada, jalankan SQL 28');del+=d2.length;
+    const ps=data.map(r=>r.proof_url).filter(Boolean);if(ps.length)await sb.storage.from('bukti-transfer').remove(ps).catch(()=>{})}
+   toast(del+' pesanan dihapus')}catch(e){toast('Gagal: '+(e.message||e)+(del?' ('+del+' sudah terhapus)':''))}
+  admTab('orders')}}
 
 /* ---------- game setup / offline: tidak bisa dibuka dan tidak bisa checkout ---------- */
 const gstop=g=>g.status!=='online'||(S.store_status==='setup'&&S.setup_game&&S.setup_game===g.name);
