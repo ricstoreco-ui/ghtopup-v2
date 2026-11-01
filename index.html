@@ -12,7 +12,7 @@
 <script>if(location.pathname.replace(/\/+$/,"")==="/admin"){var m=document.createElement("meta");m.name="robots";m.content="noindex,nofollow";document.head.appendChild(m)}</script>
 <title>GH TOP-UP</title>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Sora:wght@400;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.45.4/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <style>
 :root{--bg:#06070a;--pan:#0f1116;--pan2:#171a23;--line:#262a35;--chr:#dfe4ec;--mut:#8b93a3;--a:#5cf2ff;--a2:#9aa3b2;--ok:#4ade80;--bad:#ff5d6c;--warn:#ffc65c}
 [data-t=neon]{--a:#b78bff;--a2:#5cf2ff;--bg:#07060d}
@@ -134,7 +134,7 @@ setInterval(loadSettings,30000);
 
 /* ---------- router ---------- */
 async function route(){const h=location.pathname.replace(/\/+$/,'')==='/admin'?'admin':(location.hash.slice(1)||'home'),[p,a]=h.split('/');scrollTo(0,0);
- if(!sb){app.innerHTML='<div class="wrap"><div class="card"><h2 style="margin-top:0">Konfigurasi belum diisi</h2><p class="mut">Isi SUPABASE_URL dan SUPABASE_ANON_KEY di bagian atas script, lalu jalankan SQL part 1 di Supabase.</p></div></div>';return}
+ if(!sb){app.innerHTML=window.supabase?'<div class="wrap"><div class="card"><h2 style="margin-top:0">Konfigurasi belum diisi</h2><p class="mut">Isi SUPABASE_URL dan SUPABASE_ANON_KEY di bagian atas script, lalu jalankan SQL part 1 di Supabase.</p></div></div>':'<div class="wrap"><div class="card"><h2 style="margin-top:0">Library Supabase gagal dimuat</h2><p class="mut">Cek koneksi internet, lalu muat ulang halaman. Kalau tetap begini, hapus cache situs ini.</p></div></div>';return}
  app.innerHTML='<div class="wrap mut">Memuat...</div>';
  try{await({home,game:()=>game(a),history,admin})[p]?.()||home()}catch(e){app.innerHTML='<div class="wrap"><div class="card bad">Terjadi kesalahan: '+esc(e.message)+'</div></div>'}}
 addEventListener('hashchange',route);
