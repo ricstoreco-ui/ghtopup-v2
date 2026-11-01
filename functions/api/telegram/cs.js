@@ -2,8 +2,13 @@
 import { db, tg } from '../../_lib.js';
 export async function onRequestPost({ request, env }) {
   if (!env.WEBHOOK_SECRET || request.headers.get('x-telegram-bot-api-secret-token') !== env.WEBHOOK_SECRET) return new Response('forbidden', { status: 403 });
-  const A = String(env.TELEGRAM_CHAT_ID), T = env.TELEGRAM_CS_BOT_TOKEN, m = (await request.json().catch(() => ({}))).message;
-  if (!m?.text || String(m.from?.id) !== A || String(m.chat.id) !== A) return new Response('ok');
+  const A = String(env.TELEGRAM_CHAT_ID || '').trim(), T = env.TELEGRAM_CS_BOT_TOKEN, m = (await request.json().catch(() => ({}))).message;
+  if (!m?.text) return new Response('ok');
+  if (String(m.from?.id) !== A || String(m.chat.id) !== A) {
+    // Diagnostik: balas ke pengirim dengan ID-nya sendiri (tidak membocorkan ID admin).
+    await tg(T, 'sendMessage', { chat_id: m.chat.id, text: 'Akses ditolak. ID Telegram kamu: ' + m.from?.id + (A ? '' : '\n(TELEGRAM_CHAT_ID belum terisi di Cloudflare)') });
+    return new Response('ok');
+  }
   const note = text => tg(T, 'sendMessage', { chat_id: A, text });
   const UUID = /^[0-9a-f-]{36}$/i; let sid = null, text = m.text.trim();
   const bl = /^\/balas\s+(\S+)\s+([\s\S]+)/.exec(text);
@@ -23,4 +28,3 @@ export async function onRequestPost({ request, env }) {
   }
   return new Response('ok');
 }
-
