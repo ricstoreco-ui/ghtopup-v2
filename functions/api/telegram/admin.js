@@ -9,11 +9,16 @@ const THEMES = ['chrome', 'neon', 'cyber', 'ocean', 'gold'];
 
 export async function onRequestPost({ request, env }) {
   if (!env.WEBHOOK_SECRET || request.headers.get('x-telegram-bot-api-secret-token') !== env.WEBHOOK_SECRET) return new Response('forbidden', { status: 403 });
-  const u = await request.json().catch(() => ({})), T = env.TELEGRAM_BOT_TOKEN, A = String(env.TELEGRAM_CHAT_ID);
+  const u = await request.json().catch(() => ({})), T = env.TELEGRAM_BOT_TOKEN, A = String(env.TELEGRAM_CHAT_ID || '').trim();
   const say = (text, k) => tg(T, 'sendMessage', { chat_id: A, text, parse_mode: 'HTML', reply_markup: k });
   const state = async v => setting(env, 'private_tg_state', v);
   const fromId = String((u.callback_query || u.message)?.from?.id || '');
-  if (fromId !== A) return new Response('ok');
+  if (fromId !== A) {
+    // Diagnostik: balas ke pengirim dengan ID-nya sendiri (tidak membocorkan ID admin).
+    const cid = u.message?.chat?.id;
+    if (cid) await tg(T, 'sendMessage', { chat_id: cid, text: 'Akses ditolak. ID Telegram kamu: ' + fromId + (A ? '' : '\n(TELEGRAM_CHAT_ID belum terisi di Cloudflare)') });
+    return new Response('ok');
+  }
   try {
     const cq = u.callback_query;
     if (cq) {
@@ -65,4 +70,3 @@ export async function onRequestPost({ request, env }) {
   } catch (e) { console.error('admin bot', e.message); await say('⚠️ Terjadi error, coba lagi.'); }
   return new Response('ok');
 }
-
