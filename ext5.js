@@ -218,7 +218,7 @@ applyTheme=()=>{at5();const K=evKey();if(EV5[K]){const e=$('#evd');if(e){e.class
 /* ---------- admin: pilihan varian tema event ---------- */
 const EVO=[['ramadan','Ramadan'],['natalbaru','Natal & Tahun Baru'],['imlek','Imlek'],['musimpanas','Musim Panas']];
 const a5=admTab;
-admTab=async t=>{await a5(t);if(t==='orders')ordBulk();if(t==='store'){const s=document.querySelector('select[data-k="event_preset"]');if(s){const v=norm(S.event_preset||'ramadan');s.innerHTML=EVO.map(([k,l])=>`<option value="${k}" ${k===v?'selected':''}>${l}</option>`).join('')}}};
+admTab=async t=>{await a5(t);if(t==='orders')ordBulk();if(t==='pay')await payFee();if(t==='store'){const s=document.querySelector('select[data-k="event_preset"]');if(s){const v=norm(S.event_preset||'ramadan');s.innerHTML=EVO.map(([k,l])=>`<option value="${k}" ${k===v?'selected':''}>${l}</option>`).join('')}}};
 
 
 /* ---------- admin pesanan: filter status + hapus massal ---------- */
@@ -265,6 +265,49 @@ const mark5=()=>{if(S.store_status!=='setup'||!S.setup_game)return;
   c.dataset.m5=1;c.dataset.st='setup';c.classList.add('cl');c.setAttribute('onclick',"toast('Game ini sedang disetup, coba lagi nanti ya kak.')");
   const p=c.querySelector('.stp');if(p){p.className='stp su';p.textContent='Lagi setup'}c.parentElement.append(c)})};
 let mt5;new MutationObserver(()=>{clearTimeout(mt5);mt5=setTimeout(mark5,80)}).observe($('#app'),{childList:true,subtree:true});mark5();
+
+/* ---------- PEMBAYARAN BARU: pilih jenis (QRIS / E-Wallet / Bank) > pilih metode > rekening + total dengan biaya admin ---------- */
+const TY5=[['qris','QRIS','🔳','Scan kode QR'],['ewallet','E-Wallet','👛','DANA, OVO, GoPay, dll'],['bank','Bank','🏦','Transfer rekening bank']];
+const feeOf=(m,t)=>Math.round(+m.fee_flat||0)+Math.ceil((t*(+m.fee_percent||0))/100-1e-9);
+const feeTxt=m=>{const f=Math.round(+m.fee_flat||0),p=+m.fee_percent||0;return f||p?'Biaya admin '+[f?rp(f):'',p?p+'%':''].filter(Boolean).join(' + '):'Tanpa biaya admin'};
+const lgi5=m=>{const a=su(m.logo_url),b=su(m.logo_url2),f=a||b,n=esc((m.name||'?').slice(0,1).toUpperCase());return f?`<img class="pml" src="${esc(f)}" data-b="${a&&b?esc(b):''}" data-n="${n}" alt="" onerror="gl4(this)">`:`<b class="pmf">${n}</b>`};
+const onl5=m=>(m.status||'online')==='online';
+const p5=pay;
+pay=async o=>{app.style.visibility='hidden';try{await p5(o);await payUI(o)}catch(e){}finally{app.style.visibility=''}};
+async function payUI(o){
+ const {data,error}=await sb.from('gh_payment_methods').select('*').eq('is_active',true).order('sort_order').order('id');if(error)throw error;
+ let L=data||[];if(!L.length&&S.qris_url)L=[{id:'q',name:'QRIS',type:'qris',image_url:S.qris_url}];
+ const shell=h=>{app.innerHTML=`<div class="wrap"><h2 style="margin-top:0">Pembayaran</h2><div class="card" style="text-align:center"><p>Invoice <b>${esc(o.invoice)}</b></p>${h}</div></div>`;scrollTo(0,0)};
+ const price=`<p>Harga pesanan <b>${rp(o.total)}</b></p>`;
+ const step1=()=>{shell(`${price}<p class="mut sm" style="margin:6px 0">Pilih jenis pembayaran</p>${TY5.map(([k,l,e,d])=>{const n=L.filter(m=>(m.type||'bank')===k).length;return `<div class="card hv" data-ty="${k}" style="margin:10px 0;text-align:left;cursor:pointer;${n?'':'opacity:.5;pointer-events:none'}"><div class="pm"><span style="font-size:30px">${e}</span><div style="flex:1"><b>${l}</b><br><span class="sm mut">${n?d:'Belum tersedia'}</span></div><span>›</span></div></div>`}).join('')}`);
+  app.querySelectorAll('[data-ty]').forEach(el=>el.onclick=()=>step2(el.dataset.ty))};
+ const step2=ty=>{const arr=L.filter(m=>(m.type||'bank')===ty).sort((a,b)=>onl5(b)-onl5(a)),nm=TY5.find(x=>x[0]===ty)[1];
+  shell(`${price}<p class="mut sm" style="margin:6px 0">Pilih ${nm}</p>${arr.map(m=>onl5(m)?`<div class="card hv" data-m="${esc(m.id)}" style="margin:10px 0;text-align:left;cursor:pointer"><div class="pm">${lgi5(m)}<div style="flex:1"><b>${esc(m.name)}</b><br><span class="sm mut">${feeTxt(m)}</span></div><span>›</span></div></div>`:`<div class="card" style="margin:10px 0;text-align:left;opacity:.55"><div class="pm">${lgi5(m)}<div><b>${esc(m.name)}</b><br><span class="sm warn">${m.status==='update'?'Sedang diperbarui':'Lagi gangguan, belum bisa dipakai'}</span></div></div></div>`).join('')||'<p class="mut">Belum ada metode.</p>'}<button class="btn g" id="bk5">← Ganti jenis pembayaran</button>`);
+  $('#bk5').onclick=step1;app.querySelectorAll('[data-m]').forEach(el=>el.onclick=()=>step3(arr.find(m=>String(m.id)===el.dataset.m)))};
+ const step3=async m=>{if(!m)return;let fee=feeOf(m,+o.total),tot=+o.total+fee;
+  if(m.id!=='q'){const r=await sb.rpc('choose_payment',{p_invoice:o.invoice,p_method:String(m.id)});
+   if(r.error){if(/function|schema cache/i.test(r.error.message))toast('Biaya admin belum tersimpan di pesanan, jalankan SQL 31');else{toast(r.error.message);return step2(m.type||'bank')}}
+   else{const j=Array.isArray(r.data)?r.data[0]:r.data;if(j&&j.fee!=null){fee=+j.fee;tot=+j.pay_total}}}
+  const row=(a,b,c)=>`<div style="display:flex;justify-content:space-between;align-items:center"><span class="mut">${a}</span><span${c?` class="${c}"`:''}>${b}</span></div>`;
+  shell(`<div class="card" style="margin:10px 0;text-align:left"><div class="pm">${lgi5(m)}<div><b>${esc(m.name)}</b><br><button class="btn g" id="bk5" style="padding:2px 12px;font-size:12px">Ganti metode</button></div></div></div>
+  <div class="card" style="margin:10px 0;text-align:left">${row('Harga pesanan',rp(o.total))}${row('Biaya admin',fee?rp(fee):'Gratis')}<hr style="border:0;border-top:1px solid var(--line);margin:8px 0"><div style="display:flex;justify-content:space-between;align-items:center"><b>Total bayar</b><span><b style="font:700 22px 'Chakra Petch'" class="ok">${rp(tot)}</b> <button class="btn g" data-c="${tot}" style="padding:2px 10px;font-size:12px" onclick="navigator.clipboard.writeText(this.dataset.c);toast('Total disalin')">Salin</button></span></div></div>
+  <div class="card" style="margin:10px 0;text-align:left">${su(m.image_url)?`<div style="text-align:center"><img src="${esc(su(m.image_url))}" alt="" style="max-width:220px;width:100%;border-radius:10px;background:#fff"></div>`:''}${m.account_number?`<p style="margin-top:8px">${esc(m.account_number)} <button class="btn g" data-c="${esc(m.account_number)}" onclick="navigator.clipboard.writeText(this.dataset.c);toast('Disalin')">Salin</button></p>`:''}${m.account_name?`<p class="sm mut">a.n. ${esc(m.account_name)}</p>`:''}${m.note?`<p class="sm mut">${esc(m.note)}</p>`:''}<p class="sm warn" style="margin-top:8px">Transfer sesuai total bayar di atas, lalu upload bukti.</p></div>
+  <div class="card" style="margin:10px 0"><p class="sm mut">Upload bukti pembayaran (JPG/PNG/WebP, maks 5 MB)</p><input type="file" id="pf" accept="image/jpeg,image/png,image/webp" class="in"><button class="btn" id="pu" onclick="upProof('${esc(o.invoice)}')">Kirim bukti</button></div>
+  <a class="btn n" href="https://wa.me/${wa62(S.wa_admin)}?text=${encodeURIComponent('Halo admin, saya sudah bayar invoice '+o.invoice+' via '+m.name+' sebesar '+rp(tot))}">Konfirmasi ke admin via WhatsApp</a>
+  <p class="sm mut" style="margin-top:10px">Pembayaran diverifikasi manual oleh admin. Simpan nomor invoice untuk cek status.</p>`);
+  $('#bk5').onclick=()=>step2(m.type||'bank')};
+ step1()}
+
+/* admin tab Pembayaran: kolom biaya admin per metode (Rp tetap + persen) */
+async function payFee(){const b=$('#ab');if(!b)return;
+ const {data,error}=await sb.from('gh_payment_methods').select('id,fee_flat,fee_percent');if(error)return toast('Kolom biaya admin belum ada, jalankan SQL 31');
+ const M={};(data||[]).forEach(r=>M[r.id]=r);
+ b.querySelectorAll('select[data-st]').forEach(sl=>{const tr=sl.closest('tr'),id=sl.dataset.st,m=M[id]||{};if(!tr||tr.querySelector('.fee5'))return;
+  const td=document.createElement('td');td.className='fee5';
+  td.innerHTML=`<div class="sm mut">Biaya admin (Rp tetap + %)</div><div class="row" style="min-width:250px"><input class="in" data-f="flat" inputmode="numeric" placeholder="Rp" value="${Math.round(+m.fee_flat||0)}" style="margin:0"><input class="in" data-f="pct" inputmode="decimal" placeholder="%" value="${+m.fee_percent||0}" style="margin:0"><button class="btn g" data-s="1" style="flex:0 0 auto">Simpan</button></div>`;
+  tr.append(td);
+  td.querySelector('[data-s]').onclick=async()=>{const fl=Math.max(0,Math.round(+td.querySelector('[data-f=flat]').value||0)),pc=Math.max(0,Math.min(50,+String(td.querySelector('[data-f=pct]').value).replace(',','.')||0));
+   const {error}=await sb.from('gh_payment_methods').update({fee_flat:fl,fee_percent:pc}).eq('id',id);toast(error?error.message:'Biaya admin disimpan')}})}
 
 applyTheme();
 })();
