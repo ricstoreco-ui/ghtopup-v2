@@ -3,7 +3,7 @@
 if(window.__ghx5)return;window.__ghx5=1;
 const R=Math.random,TP=Math.PI*2,rnd=(a,b)=>a+R()*(b-a),pick=a=>a[R()*a.length|0];
 /* logo intro: dicoba berurutan. Kalau sudah upload ke repo, taruh '/logo.png' paling depan */
-const LOGOS=['https://i.postimg.cc/3Ndy8D7J/1000367499-removebg-preview.png','/icon-512.png?v=3'];
+const LOGOS=['https://i.ibb.co.com/RwX83zB/1000367499-removebg-preview.png','https://i.postimg.cc/3Ndy8D7J/1000367499-removebg-preview.png','/icon-512.png?v=3'];
 
 const css=document.createElement('style');
 css.textContent=`
@@ -13,10 +13,27 @@ css.textContent=`
 [data-t=event][data-e=imlek] .hero{background:linear-gradient(135deg,#3a0a0a,#120405 75%)}
 #evd.imlek i{width:8px;height:11px;border-radius:50% 50% 45% 45%;background:#ff3b3b;box-shadow:0 0 9px #ffb703;margin-top:2px;animation:tw4 1.8s calc(var(--i)*.15s) ease-in-out infinite}
 .blk5{text-align:center;padding:36px 18px}.blk5 .e{font-size:50px}.blk5 .n{font:700 20px 'Chakra Petch',sans-serif;margin:6px 0}
-/* intro: GH + diamond */
+/* intro: GH + diamond + logo */
+#gi .aur5{position:absolute;inset:0;overflow:hidden;pointer-events:none;transition:opacity .4s}
+#gi.x .aur5{opacity:0}
+.aur5 i{position:absolute;width:70vmax;height:70vmax;border-radius:50%;filter:blur(60px);opacity:.35;animation:au5 9s ease-in-out infinite alternate}
+.aur5 i:nth-child(1){left:-25vmax;top:-20vmax;background:radial-gradient(circle,var(--a),transparent 65%)}
+.aur5 i:nth-child(2){right:-25vmax;bottom:-25vmax;background:radial-gradient(circle,var(--a2),transparent 65%);animation-delay:-4s}
+@keyframes au5{to{transform:translate(8vmax,6vmax) scale(1.15)}}
 .gx5{position:relative;width:190px;height:190px}
+.cv5{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px;border-radius:50%;background:var(--a);box-shadow:0 0 8px var(--a);opacity:0;animation:cv5 1.3s var(--d) cubic-bezier(.5,0,.3,1) forwards}
+@keyframes cv5{0%{opacity:0;transform:translate(var(--sx),var(--sy)) scale(1.6)}25%{opacity:1}100%{opacity:0;transform:translate(0,0) scale(.2)}}
 .or5{position:absolute;inset:-70px;border-radius:50%;background:radial-gradient(circle,var(--a) 0,transparent 62%);opacity:0;transform:scale(.3);animation:or5 1.6s 1.9s ease-out forwards}
 @keyframes or5{35%{opacity:.5;transform:scale(1)}100%{opacity:.14;transform:scale(1.12)}}
+.bm5{position:absolute;inset:-130px;border-radius:50%;opacity:0;pointer-events:none;background:conic-gradient(from 0deg,transparent 0 6%,color-mix(in srgb,var(--a) 40%,transparent) 9%,transparent 13% 36%,color-mix(in srgb,var(--a2) 35%,transparent) 39%,transparent 43% 66%,color-mix(in srgb,var(--a) 40%,transparent) 69%,transparent 73%);-webkit-mask:radial-gradient(circle,transparent 14%,#000 16%,rgba(0,0,0,0) 68%);mask:radial-gradient(circle,transparent 14%,#000 16%,rgba(0,0,0,0) 68%)}
+.lgon .bm5{animation:bmi5 1s both,spin5 14s linear infinite}
+@keyframes bmi5{to{opacity:.8}}@keyframes spin5{to{transform:rotate(360deg)}}
+.rg5{position:absolute;border-radius:50%;opacity:0;pointer-events:none}
+.rg5.a{inset:-22px;border:1.5px dashed var(--a2)}
+.rg5.b{inset:-40px;border:2px solid transparent;border-top-color:var(--a);border-bottom-color:var(--a2)}
+.lgon .rg5{animation:rgi5 .8s .3s both,spin5 12s linear infinite}
+.lgon .rg5.b{animation:rgi5 .8s .45s both,spin5 7s linear infinite reverse}
+@keyframes rgi5{to{opacity:.75}}
 .dmw5,.ltw5,.lgw5{position:absolute;inset:0}
 .dmw5{transition:opacity .7s}.ltw5{transition:opacity .6s}
 .dm5{width:100%;height:100%;overflow:visible;fill:none;animation:dsp5 1.3s .05s cubic-bezier(.2,.9,.3,1.1) both}
@@ -29,17 +46,26 @@ css.textContent=`
 .lt5{position:absolute;left:50%;top:50%;font:700 64px 'Chakra Petch',sans-serif;color:#fff;text-shadow:0 0 20px var(--a),0 0 40px var(--a);animation:lt5 .85s var(--d) cubic-bezier(.2,.9,.3,1.1) both}
 @keyframes lt5{from{opacity:0;filter:blur(12px);transform:translate(calc(-50% + var(--sx)),-50%) scale(1.6)}to{opacity:1;filter:blur(0);transform:translate(calc(-50% + var(--dx)),-50%) scale(1)}}
 .lgw5{opacity:0}
-.lgon .lgw5{animation:lgi5 .9s cubic-bezier(.2,.9,.3,1.2) both}
-@keyframes lgi5{from{opacity:0;transform:scale(.72) rotate(-8deg);filter:blur(8px)}to{opacity:1;transform:none;filter:none}}
+.lgon .lgw5{animation:lgi5 1s cubic-bezier(.2,.9,.3,1.1) both}
+@keyframes lgi5{from{opacity:0;transform:scale(.7);clip-path:circle(0% at 50% 50%);filter:blur(6px)}to{opacity:1;transform:none;clip-path:circle(75% at 50% 50%);filter:none}}
 .lgon .ltw5,.lgon .dmw5{opacity:0}
 .lg5{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 6px 22px color-mix(in srgb,var(--a) 55%,transparent))}
+.lgon .lg5{animation:lgf5 3.6s 1s ease-in-out infinite}
+@keyframes lgf5{50%{transform:translateY(-5px) scale(1.03)}}
 .sn5{position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.95) 50%,transparent 60%) -150% 0/250% 100% no-repeat;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center}
 .lgon .sn5{animation:snm5 1s .85s ease-in-out forwards}
 @keyframes snm5{to{background-position:250% 0}}
 .ttl5{display:flex;margin-top:46px;font:700 34px 'Chakra Petch',sans-serif;letter-spacing:.14em}
-.ttl5 b{display:inline-block;opacity:0;transform:translateY(34px) scale(.6);filter:blur(10px);animation:tl4 .7s calc(2.45s + var(--i)*.06s) cubic-bezier(.2,.9,.3,1.3) forwards,tg4 1.1s calc(3.1s + var(--i)*.05s) ease-in-out}
+.ttl5 b{display:inline-block;opacity:0;transform:translateY(34px) scale(.6);filter:blur(10px);background:linear-gradient(90deg,#fff 0,#fff 35%,var(--a2) 50%,#fff 65%,#fff 100%) 0 0/300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:tl4 .7s calc(2.5s + var(--i)*.06s) cubic-bezier(.2,.9,.3,1.3) forwards,shm5 2.2s calc(3.3s + var(--i)*.04s) ease-in-out 2}
+@keyframes shm5{from{background-position:100% 0}to{background-position:-100% 0}}
 .ln5{height:2px;width:0;margin-top:10px;background:linear-gradient(90deg,transparent,var(--a),transparent);animation:ln4 .8s 3s cubic-bezier(.2,.9,.3,1) forwards}
 .tg5{margin-top:12px;color:var(--mut);font-size:13px;letter-spacing:.06em;opacity:0;animation:fi4b .7s 3.1s forwards}
+/* grafis LOW: matikan efek berat */
+html.q-low .card,html.q-low .top,html.q-low .bnav,html.q-low .pwa5{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html.q-low .hero:after,html.q-low .logo,html.q-low .lg{animation:none!important}
+html.q-low body:before{display:none}
+html.q-low .hv:hover{transform:none}
+html.q-low .aur5,html.q-low .bm5,html.q-low .cv5,html.q-low .spk{display:none}
 `;
 document.head.append(css);
 
@@ -50,8 +76,9 @@ function intro5(){
  const old=document.getElementById('gi');if(old)old.remove();
  const o=document.createElement('div');o.id='gi';
  const spk=Array.from({length:18},(_,i)=>{const a=i/18*TP+R()*.3,d=90+R()*80;return `<i class="spk" style="--dx:${Math.cos(a)*d|0}px;--dy:${Math.sin(a)*d|0}px;animation-delay:${2+R()*.15}s"></i>`}).join('');
- o.innerHTML=`<i class="p1"></i><i class="p2"></i><div class="ct"><div class="gx5">
- <div class="or5"></div>
+ const cv=Array.from({length:30},()=>{const a=R()*TP,d=170+R()*140;return `<i class="cv5" style="--sx:${Math.cos(a)*d|0}px;--sy:${Math.sin(a)*d|0}px;--d:${(R()*.9).toFixed(2)}s"></i>`}).join('');
+ o.innerHTML=`<i class="p1"></i><i class="p2"></i><div class="aur5"><i></i><i></i></div><div class="ct"><div class="gx5">
+ <div class="or5"></div><div class="bm5"></div><i class="rg5 a"></i><i class="rg5 b"></i>${cv}
  <div class="dmw5"><svg class="dm5" viewBox="0 0 200 200"><defs><linearGradient id="gd5" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--a)"/><stop offset="1" style="stop-color:var(--a2)"/></linearGradient></defs>
   <path class="o" d="M100 6L194 100L100 194L6 100Z" pathLength="1"/><path class="n" d="M100 36L164 100L100 164L36 100Z" pathLength="1"/>
   <circle cx="100" cy="6" r="3.5" style="--d:.95s"/><circle cx="194" cy="100" r="3.5" style="--d:1.05s"/><circle cx="100" cy="194" r="3.5" style="--d:1.15s"/><circle cx="6" cy="100" r="3.5" style="--d:1.25s"/></svg></div>
@@ -67,8 +94,40 @@ function intro5(){
   if(cors)img.crossOrigin='anonymous';img.src=src;
   if(cors){const m='url("'+src+'")';sn.style.webkitMaskImage=m;sn.style.maskImage=m}else sn.remove();
   setTimeout(()=>{if(o.isConnected)gx.classList.add('lgon')},Math.max(0,2000-(performance.now()-t0)))})();
- const tk=setInterval(()=>{const p=Math.min(1,Math.max(0,(performance.now()-t0-300)/3500)),v=Math.round((1-Math.pow(1-p,2.2))*100),b=$('#gpb'),c=$('#gpc');if(b)b.style.width=v+'%';if(c)c.textContent=v+'%'},40);
- const out=()=>{clearInterval(tk);o.classList.add('x');setTimeout(()=>o.remove(),950)};o.onclick=out;setTimeout(out,4300)}
+ const tk=setInterval(()=>{const p=Math.min(1,Math.max(0,(performance.now()-t0-300)/3800)),v=Math.round((1-Math.pow(1-p,2.2))*100),b=$('#gpb'),c=$('#gpc');if(b)b.style.width=v+'%';if(c)c.textContent=v+'%'},40);
+ const out=()=>{clearInterval(tk);o.classList.add('x');setTimeout(()=>o.remove(),950)};o.onclick=out;setTimeout(out,4600)}
+
+/* ---------- GRAFIS AUTO: sesuaikan efek dengan kemampuan HP, turun otomatis kalau mulai ngelag ---------- */
+const LV=['LOW','MEDIUM','MAX'];
+let QP=localStorage.getItem('gh_qp')||'AUTO';
+const autoLevel=()=>{const n=navigator,cn=n.connection||{},m=n.deviceMemory,c=n.hardwareConcurrency||4;let sc=0;
+ if(matchMedia('(prefers-reduced-motion:reduce)').matches||cn.saveData)return'LOW';
+ if(m)sc+=m<=2?-2:m<=4?-1:m>=8?1:0;
+ sc+=c<=4?-1:c>=8?1:0;
+ if(/2g|3g/.test(cn.effectiveType||''))sc-=1;
+ return sc<=-2?'LOW':sc>=2?'MAX':'MEDIUM'};
+const gq=$('#gq');
+const lab5=()=>{if(gq&&gq.options[0]&&gq.options[0].value==='AUTO')gq.options[0].textContent='Grafis AUTO ('+Q+')'};
+const cls5=()=>document.documentElement.classList.toggle('q-low',Q==='LOW');
+function setQ(l,re){Q=l;try{localStorage.setItem('gh_q',l)}catch(e){}cls5();lab5();if(re)fxInit()}
+let wOn=false,lowW=0;
+function watch5(){if(wOn)return;wOn=true;let t0=0,fc=0;
+ const loop=t=>{if(QP!=='AUTO'||Q==='LOW'){wOn=false;return}
+  if(document.hidden){t0=0;requestAnimationFrame(loop);return}
+  if(!t0){t0=t;fc=0}fc++;
+  if(t-t0>=3000){const f=fc*1000/(t-t0);t0=0;
+   if(f<28){setQ('LOW',true);lowW=0}
+   else if(f<42){if(++lowW>=2){setQ(LV[Math.max(0,LV.indexOf(Q)-1)],true);lowW=0}}
+   else lowW=0}
+  requestAnimationFrame(loop)};
+ setTimeout(()=>requestAnimationFrame(loop),6000)}
+if(gq){gq.insertAdjacentHTML('afterbegin','<option value="AUTO">Grafis AUTO</option>');
+ try{if(!localStorage.getItem('gh_qp'))localStorage.setItem('gh_qp','AUTO')}catch(e){}
+ gq.value=QP;
+ gq.onchange=e=>{QP=e.target.value;try{localStorage.setItem('gh_qp',QP)}catch(x){}setQ(QP==='AUTO'?autoLevel():QP,true);if(QP==='AUTO')watch5()}}
+Q=QP==='AUTO'?autoLevel():(LV.includes(QP)?QP:'MEDIUM');
+cls5();lab5();if(QP==='AUTO')watch5();
+
 intro5();
 
 /* ---------- EFEK TEMA EVENT ---------- */
@@ -218,7 +277,7 @@ applyTheme=()=>{at5();const K=evKey();if(EV5[K]){const e=$('#evd');if(e){e.class
 /* ---------- admin: pilihan varian tema event ---------- */
 const EVO=[['ramadan','Ramadan'],['natalbaru','Natal & Tahun Baru'],['imlek','Imlek'],['musimpanas','Musim Panas']];
 const a5=admTab;
-admTab=async t=>{await a5(t);if(t==='orders')ordBulk();if(t==='pay')await payFee();if(t==='store'){const s=document.querySelector('select[data-k="event_preset"]');if(s){const v=norm(S.event_preset||'ramadan');s.innerHTML=EVO.map(([k,l])=>`<option value="${k}" ${k===v?'selected':''}>${l}</option>`).join('')}}};
+admTab=async t=>{await a5(t);if(t==='orders')ordBulk();if(t==='pay')await payFee();if(t==='products')prodIcon5();if(t==='games')await gameLogo5();if(t==='store'){const s=document.querySelector('select[data-k="event_preset"]');if(s){const v=norm(S.event_preset||'ramadan');s.innerHTML=EVO.map(([k,l])=>`<option value="${k}" ${k===v?'selected':''}>${l}</option>`).join('')}}};
 
 
 /* ---------- admin pesanan: filter status + hapus massal ---------- */
@@ -308,6 +367,45 @@ async function payFee(){const b=$('#ab');if(!b)return;
   tr.append(td);
   td.querySelector('[data-s]').onclick=async()=>{const fl=Math.max(0,Math.round(+td.querySelector('[data-f=flat]').value||0)),pc=Math.max(0,Math.min(50,+String(td.querySelector('[data-f=pct]').value).replace(',','.')||0));
    const {error}=await sb.from('gh_payment_methods').update({fee_flat:fl,fee_percent:pc}).eq('id',id);toast(error?error.message:'Biaya admin disimpan')}})}
+
+/* ---------- PWA: tombol "Pasang aplikasi" (Android/Chrome dan petunjuk iPhone) ---------- */
+document.head.insertAdjacentHTML('beforeend','<style>.pwa5{position:fixed;top:calc(env(safe-area-inset-top,0px) + 62px);left:10px;right:10px;margin:0 auto;max-width:440px;z-index:6;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;background:color-mix(in srgb,var(--pan) 92%,transparent);backdrop-filter:blur(12px);border:1px solid var(--a);box-shadow:0 14px 34px -14px var(--a);animation:ri .5s both}.pwa5 img{width:40px;height:40px;border-radius:10px;flex:none}.pwa5>div{flex:1;line-height:1.25}.pwa5 .btn{padding:7px 12px;flex:none}</style>');
+const isAdm5=location.pathname.replace(/\/+$/,'')==='/admin';
+const standalone5=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const ios5=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+let dip=null;const PK5='gh_pwa5';
+const snooze5=()=>{try{return Date.now()-(+localStorage.getItem(PK5)||0)<6048e5}catch(e){return false}};
+function iosHelp(){const o=document.createElement('div');o.className='pop';
+ o.innerHTML='<div class="card"><div class="e">📲</div><h2 style="padding:0;margin:8px 0">Pasang di iPhone</h2><p class="mut" style="text-align:left;line-height:1.8">1. Buka web ini di Safari<br>2. Tekan tombol Bagikan (kotak dengan panah ke atas)<br>3. Pilih "Tambah ke Layar Utama"<br>4. Tekan Tambah</p><br><button class="btn" id="ok5">Mengerti</button></div>';
+ document.body.append(o);o.querySelector('#ok5').onclick=()=>o.remove()}
+async function install5(){
+ if(dip){dip.prompt();const c=await dip.userChoice.catch(()=>({}));dip=null;const b=$('#pwa5');if(b)b.remove();if(c.outcome==='accepted')toast('Aplikasi sedang dipasang');return}
+ if(ios5)iosHelp()}
+function pwaBar(){if(isAdm5||standalone5()||snooze5()||$('#pwa5')||(!dip&&!ios5))return;
+ const d=document.createElement('div');d.id='pwa5';d.className='pwa5';
+ d.innerHTML=`<img src="/icon-192.png?v=3" alt=""><div><b>Pasang GH TOP-UP</b><div class="sm mut">${ios5?'Tambahkan ke layar utama HP kamu':'Buka lebih cepat dari layar utama'}</div></div><button class="btn n" id="pi5">Pasang</button><button class="btn g" id="px5" aria-label="Tutup">✕</button>`;
+ document.body.append(d);$('#px5').onclick=()=>{try{localStorage.setItem(PK5,Date.now())}catch(e){}d.remove()};$('#pi5').onclick=install5}
+function pwaLink(){if(isAdm5||standalone5()||(!dip&&!ios5)||$('#pwa5l'))return;const a=document.querySelector('a[href="#tos"]'),f=a&&a.parentElement;if(!f)return;
+ f.insertAdjacentHTML('beforeend',' · <a href="#" id="pwa5l">Pasang aplikasi</a>');$('#pwa5l').onclick=e=>{e.preventDefault();install5()}}
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();dip=e;pwaLink();setTimeout(pwaBar,4000)});
+addEventListener('appinstalled',()=>{dip=null;const b=$('#pwa5');if(b)b.remove();const l=$('#pwa5l');if(l)l.remove();toast('GH TOP-UP sudah terpasang')});
+if(ios5){pwaLink();setTimeout(pwaBar,6000)}
+
+/* ---------- admin: ikon produk (satu link untuk semua produk) dan logo game ---------- */
+function prodIcon5(){const sl=$('#pl');if(!sl||$('#pic5'))return;
+ sl.insertAdjacentHTML('afterend','<input class="in" id="pic5" placeholder="Link ikon produk (https://...), kosong = tanpa ikon"><button class="btn g" id="pica5" style="margin-bottom:10px">Pakai ikon ini untuk semua produk game ini</button>');
+ $('#pica5').onclick=async()=>{const u=$('#pic5').value.trim();if(!su(u))return toast('Isi link ikon (https://...) dulu');if(!confirm('Pakai ikon ini untuk SEMUA produk di game ini?'))return;
+  const {data,error}=await sb.from('products').update({icon_url:u}).eq('game_id',window.admGame).select('id');toast(error?error.message:(data||[]).length+' produk diperbarui');admTab('products')}}
+const ep5=editProd;editProd=id=>{ep5(id);const r=PM[id];if($('#pic5'))$('#pic5').value=(r&&r.icon_url)||''};
+saveProd=async()=>{const ic=$('#pic5')?$('#pic5').value.trim():'';if(ic&&!su(ic))return toast('Link ikon harus diawali https://');
+ const row={game_id:window.admGame,name:$('#pn').value.trim(),price:+$('#pp').value||0,discount:+$('#pd').value||0,label:$('#pl').value,icon_url:ic||null};
+ if(!row.name||row.price<=0)return toast('Isi nama dan harga');if(row.discount>=row.price)return toast('Diskon harus lebih kecil dari harga');
+ const id=$('#pi').value,q=id?sb.from('products').update(row).eq('id',id):sb.from('products').insert(row);const {error}=await q;toast(error?error.message:'Produk disimpan');admTab('products')};
+async function gameLogo5(){const b=$('#ab');if(!b)return;const {data}=await sb.from('games').select('id,logo_url');const M={};(data||[]).forEach(r=>M[r.id]=r);
+ [...b.querySelectorAll('button')].filter(x=>(x.getAttribute('onclick')||'').startsWith("delRow('games'")).forEach(btn=>{const tr=btn.closest('tr');if(!tr||tr.querySelector('.gl5'))return;
+  const id=(btn.getAttribute('onclick').match(/'games','([^']+)'/)||[])[1];if(!id)return;
+  const td=document.createElement('td');td.className='gl5';td.innerHTML=`<div class="row" style="min-width:260px"><input class="in" placeholder="Link logo (https://...)" value="${esc((M[id]||{}).logo_url||'')}" style="margin:0"><button class="btn g" style="flex:0 0 auto">Simpan</button></div>`;tr.append(td);
+  td.querySelector('button').onclick=async()=>{const v=td.querySelector('input').value.trim();if(v&&!su(v))return toast('Link harus diawali https://');const {error}=await sb.from('games').update({logo_url:v}).eq('id',id);toast(error?error.message:'Logo disimpan')}})}
 
 applyTheme();
 })();
