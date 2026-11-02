@@ -277,7 +277,7 @@ applyTheme=()=>{at5();const K=evKey();if(EV5[K]){const e=$('#evd');if(e){e.class
 /* ---------- admin: pilihan varian tema event ---------- */
 const EVO=[['ramadan','Ramadan'],['natalbaru','Natal & Tahun Baru'],['imlek','Imlek'],['musimpanas','Musim Panas']];
 const a5=admTab;
-admTab=async t=>{await a5(t);if(t==='orders')ordBulk();if(t==='pay')await payFee();if(t==='products')prodIcon5();if(t==='games')await gameLogo5();if(t==='store'){const s=document.querySelector('select[data-k="event_preset"]');if(s){const v=norm(S.event_preset||'ramadan');s.innerHTML=EVO.map(([k,l])=>`<option value="${k}" ${k===v?'selected':''}>${l}</option>`).join('')}}};
+admTab=async t=>{await a5(t);if(t==='orders')ordBulk();if(t==='pay')await payFee();if(t==='products'){prodIcon5();grpAdm5()}if(t==='games')await gameLogo5();if(t==='store'){const s=document.querySelector('select[data-k="event_preset"]');if(s){const v=norm(S.event_preset||'ramadan');s.innerHTML=EVO.map(([k,l])=>`<option value="${k}" ${k===v?'selected':''}>${l}</option>`).join('')}}};
 
 
 /* ---------- admin pesanan: filter status + hapus massal ---------- */
@@ -308,7 +308,7 @@ const g5=game;
 game=async id=>{
  let gs=null;try{gs=(await sb.from('games').select('name,status').eq('id',id).maybeSingle()).data}catch(e){}
  if(gs&&gstop(gs)){app.innerHTML=blocked(gs);return}
- await g5(id);
+ await g5(id);try{await group5(id)}catch(e){}
  const buy=$('#buy');if(!buy||buy.disabled)return;const orig=buy.onclick;if(!orig)return;
  const nb=buy.cloneNode(true);buy.replaceWith(nb);
  nb.onclick=async()=>{if(nb.dataset.b)return;nb.dataset.b=1;
@@ -393,12 +393,12 @@ if(ios5){pwaLink();setTimeout(pwaBar,6000)}
 
 /* ---------- admin: ikon produk (satu link untuk semua produk) dan logo game ---------- */
 function prodIcon5(){const sl=$('#pl');if(!sl||$('#pic5'))return;
- sl.insertAdjacentHTML('afterend','<input class="in" id="pic5" placeholder="Link ikon produk (https://...), kosong = tanpa ikon"><button class="btn g" id="pica5" style="margin-bottom:10px">Pakai ikon ini untuk semua produk game ini</button>');
+ sl.insertAdjacentHTML('afterend','<input class="in" id="gr5" list="gl5" placeholder="Grup produk, mis. Diamond atau Membership (kosong = tanpa grup)"><datalist id="gl5"></datalist><input class="in" id="pic5" placeholder="Link ikon produk (https://...), kosong = tanpa ikon"><button class="btn g" id="pica5" style="margin-bottom:10px">Pakai ikon ini untuk semua produk game ini</button>');
  $('#pica5').onclick=async()=>{const u=$('#pic5').value.trim();if(!su(u))return toast('Isi link ikon (https://...) dulu');if(!confirm('Pakai ikon ini untuk SEMUA produk di game ini?'))return;
   const {data,error}=await sb.from('products').update({icon_url:u}).eq('game_id',window.admGame).select('id');toast(error?error.message:(data||[]).length+' produk diperbarui');admTab('products')}}
-const ep5=editProd;editProd=id=>{ep5(id);const r=PM[id];if($('#pic5'))$('#pic5').value=(r&&r.icon_url)||''};
+const ep5=editProd;editProd=id=>{ep5(id);const r=PM[id];if($('#pic5'))$('#pic5').value=(r&&r.icon_url)||'';if($('#gr5'))$('#gr5').value=(r&&r.grp)||''};
 saveProd=async()=>{const ic=$('#pic5')?$('#pic5').value.trim():'';if(ic&&!su(ic))return toast('Link ikon harus diawali https://');
- const row={game_id:window.admGame,name:$('#pn').value.trim(),price:+$('#pp').value||0,discount:+$('#pd').value||0,label:$('#pl').value,icon_url:ic||null};
+ const row={game_id:window.admGame,name:$('#pn').value.trim(),price:+$('#pp').value||0,discount:+$('#pd').value||0,label:$('#pl').value,icon_url:ic||null,grp:(($('#gr5')||{}).value||'').trim()||null};
  if(!row.name||row.price<=0)return toast('Isi nama dan harga');if(row.discount>=row.price)return toast('Diskon harus lebih kecil dari harga');
  const id=$('#pi').value,q=id?sb.from('products').update(row).eq('id',id):sb.from('products').insert(row);const {error}=await q;toast(error?error.message:'Produk disimpan');admTab('products')};
 async function gameLogo5(){const b=$('#ab');if(!b)return;const {data}=await sb.from('games').select('id,logo_url');const M={};(data||[]).forEach(r=>M[r.id]=r);
@@ -406,6 +406,38 @@ async function gameLogo5(){const b=$('#ab');if(!b)return;const {data}=await sb.f
   const id=(btn.getAttribute('onclick').match(/'games','([^']+)'/)||[])[1];if(!id)return;
   const td=document.createElement('td');td.className='gl5';td.innerHTML=`<div class="row" style="min-width:260px"><input class="in" placeholder="Link logo (https://...)" value="${esc((M[id]||{}).logo_url||'')}" style="margin:0"><button class="btn g" style="flex:0 0 auto">Simpan</button></div>`;tr.append(td);
   td.querySelector('button').onclick=async()=>{const v=td.querySelector('input').value.trim();if(v&&!su(v))return toast('Link harus diawali https://');const {error}=await sb.from('games').update({logo_url:v}).eq('id',id);toast(error?error.message:'Logo disimpan')}})}
+
+/* ---------- GRUP PRODUK: Promo Spesial paling atas, lalu per grup (Diamond, Membership, dst), tiap grup urut termurah ---------- */
+document.head.insertAdjacentHTML('beforeend','<style>.gh5{font:700 15px "Chakra Petch",sans-serif;margin:18px 0 8px;display:flex;align-items:center;gap:8px}.gh5:after{content:"";flex:1;height:1px;background:var(--line)}#pg5 .gh5:first-child{margin-top:6px}</style>');
+async function group5(id){
+ const picks=[...app.querySelectorAll('.pick')];if(!picks.length)return;
+ const {data,error}=await sb.from('products').select('id,grp,label,price,discount').eq('game_id',id);if(error)return;
+ const M={};(data||[]).forEach(r=>M[String(r.id)]=r);
+ const info=picks.map(el=>{const r=M[el.dataset.id]||{};return{el,grp:(r.grp||'').trim(),lb:r.label&&r.label!=='none'?r.label:'',fin:Math.max(0,(r.price||0)-(r.discount||0)),dc:(r.discount||0)>0}});
+ const pr={'Flash Sale':0,'Diskon':1,'New':2};
+ const promo=info.filter(x=>x.lb||x.dc).sort((a,b)=>((pr[a.lb]!==undefined?pr[a.lb]:1.5)-(pr[b.lb]!==undefined?pr[b.lb]:1.5))||a.fin-b.fin);
+ const G={};info.filter(x=>!(x.lb||x.dc)).forEach(x=>{(G[x.grp]=G[x.grp]||[]).push(x)});
+ let ord=[];try{ord=JSON.parse(S['grp_'+id]||'[]')}catch(e){}
+ const names=Object.keys(G).filter(k=>k),sorted=[...ord.filter(n=>G[n]),...names.filter(n=>!ord.includes(n)).sort()];
+ const sec=[];if(promo.length)sec.push(['🔥 Promo Spesial',promo]);
+ sorted.forEach(n=>sec.push([n,G[n]]));
+ if(G[''])sec.push([sorted.length?'Lainnya':(promo.length?'Semua Produk':''),G['']]);
+ const old=picks[0].parentElement,box=document.createElement('div');box.id='pg5';
+ sec.forEach(([t,arr])=>{if(t){const h=document.createElement('h3');h.className='gh5';h.textContent=t;box.append(h)}
+  const g=document.createElement('div');g.className='grid';arr.sort((a,b)=>(arr===promo?0:a.fin-b.fin)).forEach(x=>g.append(x.el));box.append(g)});
+ old.replaceWith(box)}
+function grpAdm5(){const f=$('#pt');if(!f||$('#grp5'))return;const card=f.closest('.card');if(!card)return;const gid=window.admGame;
+ const P=Object.values(window.PM||{}),cnt={};P.forEach(r=>{const k=(r.grp||'').trim();if(k)cnt[k]=(cnt[k]||0)+1});
+ let ord=[];try{ord=JSON.parse(S['grp_'+gid]||'[]')}catch(e){}
+ const names=[...ord.filter(n=>cnt[n]),...Object.keys(cnt).filter(n=>!ord.includes(n)).sort()];
+ const dl=$('#gl5');if(dl)dl.innerHTML=names.map(n=>`<option value="${esc(n)}">`).join('');
+ const d=document.createElement('div');d.id='grp5';
+ d.innerHTML=`<br><div class="card"><h3>Grup produk</h3><p class="sm mut" style="margin:6px 0 10px">Pembeli melihat Promo Spesial paling atas (produk berlabel Flash Sale, Diskon, New, atau yang ada potongan harga), lalu tiap grup sesuai urutan di bawah. Di dalam grup, produk diurut dari harga termurah.</p>${names.length?`<table>${names.map((n,i)=>`<tr><td>${esc(n)} <span class="sm mut">(${cnt[n]} produk)</span></td><td><button class="btn g" data-g="u" data-i="${i}">▲</button> <button class="btn g" data-g="d" data-i="${i}">▼</button></td></tr>`).join('')}</table>`:'<p class="mut">Belum ada grup. Isi kolom Grup di form produk, atau pakai kotak di bawah.</p>'}<h3 style="margin-top:14px">Masukkan produk ke grup sekaligus</h3><input class="in" id="gk5" placeholder="Kata di nama produk, mis. diamond"><input class="in" id="gn5" placeholder="Nama grup, mis. Diamond"><button class="btn" id="ga5">Masukkan ke grup</button></div>`;
+ card.after(d);
+ d.onclick=async e=>{const x=e.target.closest('[data-g]');if(!x)return;const i=+x.dataset.i,j=x.dataset.g==='u'?i-1:i+1;if(j<0||j>=names.length)return;[names[i],names[j]]=[names[j],names[i]];
+  const {error}=await sb.from('settings').upsert([{key:'grp_'+gid,value:JSON.stringify(names)}]);if(error)return toast(error.message);S['grp_'+gid]=JSON.stringify(names);admTab('products')};
+ $('#ga5').onclick=async()=>{const k=$('#gk5').value.trim(),n=$('#gn5').value.trim();if(!k||!n)return toast('Isi kata dan nama grup');
+  const {data,error}=await sb.from('products').update({grp:n}).eq('game_id',gid).ilike('name','%'+k+'%').select('id');toast(error?error.message+' (jalankan SQL 33)':(data||[]).length+' produk masuk grup '+n);if(!error)admTab('products')}}
 
 applyTheme();
 })();
