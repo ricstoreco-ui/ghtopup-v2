@@ -1,5 +1,6 @@
 // Webhook bot ADMIN (TELEGRAM_BOT_TOKEN): menu, omzet, invoice, status toko, tombol Sukses/Gagal, perintah darurat.
-import { db, tg, esc, setting, cleanupFailed, cleanupProofs } from '../../_lib.js';
+import { db, tg, esc, setting, cleanupFailed, cleanupProofs, checkUrl, scanDeadLinks, backupProject } from '../../_lib.js';
+
 const kb = r => ({ inline_keyboard: r });
 const MENU = kb([[{ text: '📊 Laporan & Omzet', callback_data: 'menu_omzet' }, { text: '🎫 Cek Invoice', callback_data: 'menu_invoice' }], [{ text: '⚙️ Atur Web', callback_data: 'menu_web' }, { text: '🔒 Status Toko', callback_data: 'menu_toko' }]]);
 const TOKO = kb([[{ text: '🟢 Online', callback_data: 'st_online' }, { text: '🚧 Maintenance', callback_data: 'st_maintenance' }], [{ text: '🔴 Closed', callback_data: 'st_closed' }, { text: '🛠️ Setup Game', callback_data: 'st_setup' }]]);
@@ -45,7 +46,7 @@ export async function onRequestPost({ request, env }) {
         const r = await db(env, 'orders?select=invoice,game_name,product_name,total,status&order=created_at.desc&limit=5') || [];
         await say(r.map(x => `<code>${x.invoice}</code> ${esc(x.game_name)} ${esc(x.product_name)} ${rp(x.total)} [${x.status}]`).join('\n') || 'Belum ada order.');
       } else if (d === 'menu_invoice') await say('Ketik: /cek GH-XXXXXXXX');
-      else if (d === 'menu_web') await say('⚙️ Perintah: /tema chrome|neon|cyber|ocean|gold\n/maintenance 2jam\n/closed pesan\n/setup nama game\n/online\n/cleanup-failed\n/cleanup-proof\n/blokir 08xxxxxxxxxx', kb([[{ text: '🔒 Status Toko', callback_data: 'menu_toko' }]]));
+      else if (d === 'menu_web') await say('⚙️ Perintah: /tema chrome|neon|cyber|ocean|gold\n/maintenance 2jam\n/closed pesan\n/setup nama game\n/online\n/cleanup-failed\n/cleanup-proof\n/blokir 08xxxxxxxxxx\n/backup\n/deadlink', kb([[{ text: '🔒 Status Toko', callback_data: 'menu_toko' }]]));
       else if (d === 'menu_toko') await say('🔒 <b>Status Toko</b>', TOKO);
       else if (d === 'st_online') { await setting(env, 'store_status', 'online'); await say('🟢 Toko ONLINE.'); }
       else if (d === 'st_maintenance') { await state('maintenance'); await say('Ketik durasi maintenance, contoh: 2jam / 30mnt / 1hari', kb([[30, 60, 120, 360].map(x => ({ text: x >= 60 ? x / 60 + ' jam' : x + ' mnt', callback_data: 'mt_' + x }))])); }
@@ -58,11 +59,25 @@ export async function onRequestPost({ request, env }) {
         const r = await db(env, `orders?invoice=ilike.${inv}`, { method: 'PATCH', body: { status: st, updated_at: new Date().toISOString() } });
         await say(r?.length ? `${st === 'success' ? '✅' : '❌'} <code>${esc(r[0].invoice || inv)}</code> diubah ke ${st}.` : '⚠️ Order tidak ditemukan atau gagal diubah: ' + esc(inv));
       }
+      else if (d.startsWith('dlfix:')) {
+        const dlId = d.slice(6);
+        const row = (await db(env, `dead_links?id=eq.${dlId}&select=*`))?.[0];
+        if (!row) return say('⚠️ Dead link tidak ditemukan.');
+        await state('dlfix:' + dlId);
+        await say(`✏️ <b>Ganti Link</b>\nTabel: <code>${esc(row.table_name)}.${esc(row.column_name)}</code>\nLabel: ${esc(row.row_label || row.row_id)}\nLama: <code>${esc(row.url)}</code>\n\nKetik URL baru (https://...) atau /batal.`, kb([[{ text: '✖️ Batal', callback_data: 'dlcancel' }]]));
+      }
+      else if (d.startsWith('dlign:')) {
+        await db(env, `dead_links?id=eq.${d.slice(6)}`, { method: 'PATCH', body: { ignored: true, ignored_at: new Date().toISOString() } });
+        await say('🚫 Link diabaikan.');
+      }
+      else if (d === 'dlcancel') { await state(''); await say('✅ Dibatalkan.'); }
+      
       return new Response('ok');
     }
 
     const t = (u.message?.text || '').trim(); if (!t) return new Response('ok');
     const [c0, ...rest] = t.split(/\s+/), cmd = c0.split('@')[0].toLowerCase(), arg = rest.join(' ');
+    
     if (cmd === '/start' || cmd === '/menu') await say('🤖 <b>PUSAT KENDALI GH TOPUP</b>\nMau ngapain hari ini, Bos?', MENU);
     else if (cmd === '/cek') {
       const o = INV.test(arg) ? (await db(env, `orders?invoice=ilike.${arg}`))?.[0] : null;
@@ -76,10 +91,65 @@ export async function onRequestPost({ request, env }) {
     else if (cmd === '/blokir') { if (!/^08[0-9]{8,12}$/.test(arg)) await say('Contoh: /blokir 08123456789'); else { await db(env, 'gh_blacklist_wa?on_conflict=wa', { method: 'POST', body: { wa: arg }, prefer: 'resolution=ignore-duplicates' }); await say('🚫 Diblokir: ' + arg); } }
     else if (cmd === '/cleanup-failed') { const n = await cleanupFailed(env, 'telegram'); await say(n < 0 ? '❌ Gagal menjalankan cleanup.' : `🧹 ${n} pesanan gagal dihapus.`); }
     else if (cmd === '/cleanup-proof') { const n = await cleanupProofs(env, 'telegram'); await say(n < 0 ? '❌ Gagal menghapus bukti.' : `🧹 ${n} bukti transfer dihapus.`); }
+    else if (cmd === '/backup') {
+      await say('⏳ <b>Memproses backup...</b>\nMengambil schema DB dan kode dari GitHub. Mohon tunggu 20-60 detik.');
+      try {
+        const content = await backupProject(env);
+        const blob = new Blob([content], { type: 'text/plain' });
+        const fd = new FormData();
+        fd.append('chat_id', A);
+        fd.append('caption', `📦 <b>BACKUP GH TOPUP</b>\nTanggal: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}\nUkuran: ${(content.length / 1024).toFixed(1)} KB`);
+        fd.append('parse_mode', 'HTML');
+        fd.append('document', blob, `BACKUP_GHTOPUP_${Date.now()}.txt`);
+        await fetch(`https://api.telegram.org/bot${T}/sendDocument`, { method: 'POST', body: fd });
+      } catch (e) { await say('❌ Backup gagal: ' + esc(e.message)); }
+    }
+    else if (cmd === '/deadlink') {
+      const force = arg === 'force' || arg === 'all';
+      await say('🔍 <b>Scanning URL...</b>\nMengecek link gambar yang rusak. Mohon tunggu 10-30 detik.');
+      try {
+        const scan = await scanDeadLinks(env, 'telegram', force);
+        const { scanned, deadList, counts, remaining, totalUrls } = scan;
+        if (!deadList.length) {
+          await say(`✅ <b>DEAD-LINK OK</b>\n${scanned} URL dicek, semua aman.` + (remaining ? `\n⚠️ ${remaining} URL belum dicek. Jalankan /deadlink lagi.` : ''));
+          return new Response('ok');
+        }
+        const summary = `🔴 <b>DEAD-LINK REPORT</b>\n` +
+          `Dicek: ${scanned} URL\n✅ OK: ${counts.ok}\n🔴 Dead: ${counts.dead}\n🚫 Forbidden: ${counts.forbidden}\n⏱ Timeout: ${counts.timeout}\n` +
+          (counts.error ? `⚠️ Error: ${counts.error}\n` : '') +
+          (remaining ? `\n⚠️ ${remaining} URL belum dicek (limit 35/scan). Jalankan /deadlink lagi.` : `\n✅ Semua ${totalUrls} URL sudah dicek.`);
+        await say(summary);
+        
+        for (const d of deadList.slice(0, 20)) {
+          const icon = d.status === 'dead' ? '🔴' : d.status === 'forbidden' ? '🚫' : d.status === 'timeout' ? '⏱' : '⚠️';
+          const txt = `${icon} <b>${esc(d.row_label || d.row_id)}</b>\nTabel: <code>${d.table_name}.${d.column_name}</code>\nStatus: ${d.status} (${d.code || 'timeout'})\n<a href="${d.url}">Link rusak</a>`;
+          await tg(T, 'sendMessage', { chat_id: A, text: txt, parse_mode: 'HTML', disable_web_page_preview: true, reply_markup: kb([[{ text: '✏️ Ganti Link', callback_data: 'dlfix:' + d.dl_id }, { text: '🚫 Abaikan', callback_data: 'dlign:' + d.dl_id }]]) });
+        }
+      } catch (e) { await say('❌ Scan gagal: ' + esc(e.message)); }
+    }
+    else if (cmd === '/batal' || cmd === '/cancel') { await state(''); await say('✅ Dibatalkan.'); }
     else if (!t.startsWith('/')) {
       const s = (await db(env, 'settings?select=value&key=eq.private_tg_state'))?.[0]?.value;
       if (s === 'maintenance') { const ms = dur(t); if (!ms) await say('Format salah, contoh: 2jam'); else { await setting(env, 'maintenance_ends_at', new Date(Date.now() + ms).toISOString()); await setting(env, 'store_status', 'maintenance'); await state(''); await say('🚧 Maintenance aktif.'); } }
       else if (s === 'closed') { await setting(env, 'closed_message', t.slice(0, 200)); await setting(env, 'store_status', 'closed'); await state(''); await say('🔴 Toko CLOSED.'); }
+      else if (s && s.startsWith('dlfix:')) {
+        const dlId = s.slice(6), newUrl = t.trim();
+        if (!/^https?:\/\//i.test(newUrl)) return say('❌ URL harus diawali http:// atau https://');
+        await say('🔍 Cek URL baru...');
+        const c = await checkUrl(newUrl);
+        if (c.status !== 'ok') return say(`❌ URL gagal dicek\nStatus: ${c.status} (${c.code || 'timeout'})\nCoba URL lain atau /batal.`);
+        
+        const row = (await db(env, `dead_links?id=eq.${dlId}&select=*`))?.[0];
+        if (!row) { await state(''); return say('⚠️ Dead link tidak ditemukan.'); }
+        const pk = row.table_name === 'settings' ? 'key' : 'id';
+        
+        try {
+          await db(env, `${row.table_name}?${pk}=eq.${encodeURIComponent(row.row_id)}`, { method: 'PATCH', body: { [row.column_name]: newUrl } });
+          await db(env, `dead_links?id=eq.${dlId}`, { method: 'PATCH', body: { url: newUrl, status: 'ok', status_code: c.code, last_checked_at: new Date().toISOString() } });
+          await state('');
+          await say(`✅ <b>Link berhasil diganti!</b>\nTabel: <code>${esc(row.table_name)}.${esc(row.column_name)}</code>\nBaru: <code>${esc(newUrl)}</code>\nStatus: OK (${c.code})`);
+        } catch (e) { await state(''); await say('❌ Gagal update DB: ' + esc(e.message)); }
+      }
       else await say('Ketik /menu untuk membuka menu.');
     } else await say('Perintah tidak dikenal. Ketik /menu.');
   } catch (e) {
@@ -87,4 +157,4 @@ export async function onRequestPost({ request, env }) {
     try { await say('⚠️ Error: ' + esc(String(e.message || e).slice(0, 200))); } catch (_) { /* abaikan */ }
   }
   return new Response('ok');
-}
+        }
