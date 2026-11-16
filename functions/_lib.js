@@ -125,6 +125,10 @@ export async function scanDeadLinks(env, actor = 'manual', force = false) {
 
 export async function backupProject(env) {
   const repo = env.GH_REPO || 'ricstoreco-ui/ghtopup-v2';
+  
+  // Header wajib biar GitHub API mau ngasih response (fix error sebelumnya)
+  const ghHeaders = { 'User-Agent': 'GH-Topup-Backup-Bot', 'Accept': 'application/vnd.github.v3+json' };
+
   let schemaText = '';
   try {
     const r = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/sys_dump_schema`, { method: 'POST', headers: { apikey: env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' }, body: '{}' });
@@ -137,15 +141,27 @@ export async function backupProject(env) {
   
   let ghFiles = '\n--- GITHUB FILES ---\n';
   try {
-    const tree = await fetch(`https://api.github.com/repos/${repo}/git/trees/main?recursive=1`).then(r => r.json());
+    // 1. Ambil daftar file (Tree)
+    const treeRes = await fetch(`https://api.github.com/repos/${repo}/git/trees/main?recursive=1`, { headers: ghHeaders });
+    if (!treeRes.ok) throw new Error(`GitHub API Error ${treeRes.status}: ${await treeRes.text()}`);
+    const tree = await treeRes.json();
+    
     const files = (tree.tree || []).filter(f => f.type === 'blob' && /\.(js|html|json|css|md|sql|yml|yaml|toml)$/.test(f.path) && f.size <= 500000);
+    
+    // 2. Download isi file satu per satu
     for (const f of files) {
       try {
-        const c = await fetch(`https://raw.githubusercontent.com/${repo}/main/${f.path}`).then(r => r.text());
+        const cRes = await fetch(`https://raw.githubusercontent.com/${repo}/main/${f.path}`, { headers: ghHeaders });
+        if (!cRes.ok) throw new Error(`HTTP ${cRes.status}`);
+        const c = await cRes.text();
         ghFiles += `\n\n// FILE: ${f.path}\n// ==========================================\n${c}`;
-      } catch (e) { ghFiles += `\n// GAGAL FETCH: ${f.path}\n`; }
+      } catch (e) { 
+        ghFiles += `\n// GAGAL FETCH: ${f.path} (${e.message})\n`; 
+      }
     }
-  } catch (e) { ghFiles += `\n// GAGAL FETCH GITHUB: ${e.message}\n`; }
+  } catch (e) { 
+    ghFiles += `\n// GAGAL FETCH GITHUB: ${e.message}\n`; 
+  }
   
   return schemaText + '\n\n' + settingsText + '\n\n' + ghFiles;
-                                                                               }
+}
